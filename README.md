@@ -1,4 +1,4 @@
-# Firmware application for the device
+# Firmware application
 
 The firmware prod_plink_app_s112.hex is a merge of the app + softdevice + bootloader + bootloader settings. The prod_hex_merge.bat will do this but the nrfutil.exe is required to run it. The path to the utility in the script should point to its location on your system.
 
