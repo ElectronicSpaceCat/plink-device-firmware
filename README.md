@@ -22,8 +22,6 @@ Segger RTT is required to flash/debug the device.
 * instructions on flashing firmware via segger
 * images of device, pcbs, app screenshots, etc
 
-## Android App
+## Android App (currently not avaiable for download)
 
 <img src="https://github.com/ElectronicSpaceCat/plink-android-app/blob/master/extra/images/Screenshot_20230217-104249.png" width="150"> <img src="https://github.com/ElectronicSpaceCat/plink-android-app/blob/master/extra/images/Screenshot_20230217-104148.png" width="150"> <img src="https://github.com/ElectronicSpaceCat/plink-android-app/blob/master/extra/images/Screenshot_20230217-104220.png" width="150"> <img src="https://github.com/ElectronicSpaceCat/plink-android-app/blob/master/extra/images/Screenshot_20230217-104228.png" width="150"> <img src="https://github.com/ElectronicSpaceCat/plink-android-app/blob/master/extra/images/Screenshot_20230217-104358.png" width="150"> <img src="https://github.com/ElectronicSpaceCat/plink-android-app/blob/master/extra/images/Screenshot_20230217-104308.png" width="150">
-
-### The app is currently not avaiable for download.
