@@ -196,6 +196,7 @@ VL53LX_Error VL53LX_DataInit(VL53LX_DEV Dev)
 
 
 #ifdef USE_I2C_2V8
+	uint8_t i;
 	Status = VL53LX_RdByte(Dev, VL53LX_PAD_I2C_HV__EXTSUP_CONFIG, &i);
 	if (Status == VL53LX_ERROR_NONE) {
 		i = (i & 0xfe) | 0x01;
