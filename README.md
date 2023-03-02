@@ -1,5 +1,16 @@
 # Firmware application
 
+Suggested project folder structure:
+
+```
+plink/
+├── nRF_SDK
+├── nrfutil.exe
+├── plink-device-firmware
+├── plink-device-bootloader
+└── prod_hex_merge.bat
+```
+
 The firmware prod_plink_app_s112.hex is a merge of the app + softdevice + bootloader + bootloader settings. The prod_hex_merge.bat will do this but the nrfutil.exe is required to run it. The path to the utility in the script should point to its location on your system.
 
 The nrfutil can be found here:
@@ -12,7 +23,7 @@ The SDK can be downloaded here:
 
 https://nsscprodmedia.blob.core.windows.net/prod/software-and-other-downloads/sdks/nrf5/binaries/nrf5_sdk_17.1.0_ddde560.zip
 
-Segger RTT is required to flash/debug the device.
+Segger J-Link is recommended for flashing the firmwar over the device's SWD pins on the main pcb.
 
 ## TODO
 * instructions on flashing firmware via segger
