@@ -122,6 +122,8 @@ VL53LX_Error VL53LX_get_additional_data(
 
 	LOG_FUNCTION_START("");
 
+
+
 	pdata->preset_mode             = pdev->preset_mode;
 	pdata->zone_preset             = pdev->zone_preset;
 	pdata->measurement_mode        = pdev->measurement_mode;
@@ -133,10 +135,15 @@ VL53LX_Error VL53LX_get_additional_data(
 	pdata->mm_config_timeout_us        = pdev->mm_config_timeout_us;
 	pdata->range_config_timeout_us     = pdev->range_config_timeout_us;
 	pdata->inter_measurement_period_ms = pdev->inter_measurement_period_ms;
-	pdata->dss_config__target_total_rate_mcps = pdev->dss_config__target_total_rate_mcps;
+	pdata->dss_config__target_total_rate_mcps =
+			pdev->dss_config__target_total_rate_mcps;
 
 
-	status = VL53LX_get_histogram_debug_data(Dev,&(pdata->VL53LX_p_006));
+
+	status =
+		VL53LX_get_histogram_debug_data(
+			Dev,
+			&(pdata->VL53LX_p_006));
 
 	LOG_FUNCTION_END(status);
 

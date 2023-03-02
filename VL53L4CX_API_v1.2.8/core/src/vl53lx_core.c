@@ -808,6 +808,7 @@ void VL53LX_i2c_encode_int16_t(
 	uint8_t    *pbuffer)
 {
 
+
 	uint16_t   i    = 0;
 	int16_t    VL53LX_p_003 = 0;
 

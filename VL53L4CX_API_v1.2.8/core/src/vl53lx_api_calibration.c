@@ -1029,4 +1029,3 @@ VL53LX_Error   VL53LX_run_hist_xtalk_extraction(
 
 	return status;
 }
-

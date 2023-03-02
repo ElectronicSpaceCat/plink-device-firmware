@@ -179,6 +179,7 @@ VL53LX_Error VL53LX_i2c_encode_customer_nvm_managed(
 	uint8_t                  *pbuffer)
 {
 
+
 	VL53LX_Error status = VL53LX_ERROR_NONE;
 
 	LOG_FUNCTION_START("");
@@ -186,24 +187,54 @@ VL53LX_Error VL53LX_i2c_encode_customer_nvm_managed(
 	if (buf_size < VL53LX_CUSTOMER_NVM_MANAGED_I2C_SIZE_BYTES)
 		return VL53LX_ERROR_COMMS_BUFFER_TOO_SMALL;
 
-	*(pbuffer +   0) = pdata->global_config__spad_enables_ref_0;
-	*(pbuffer +   1) = pdata->global_config__spad_enables_ref_1;
-	*(pbuffer +   2) = pdata->global_config__spad_enables_ref_2;
-	*(pbuffer +   3) = pdata->global_config__spad_enables_ref_3;
-	*(pbuffer +   4) = pdata->global_config__spad_enables_ref_4;
-	*(pbuffer +   5) = pdata->global_config__spad_enables_ref_5 & 0xF;
-	*(pbuffer +   6) = pdata->global_config__ref_en_start_select;
-	*(pbuffer +   7) = pdata->ref_spad_man__num_requested_ref_spads & 0x3F;
-	*(pbuffer +   8) = pdata->ref_spad_man__ref_location & 0x3;
-	VL53LX_i2c_encode_uint16_t(pdata->algo__crosstalk_compensation_plane_offset_kcps, 2, pbuffer +   9);
-	VL53LX_i2c_encode_int16_t(pdata->algo__crosstalk_compensation_x_plane_gradient_kcps, 2, pbuffer +  11);
-	VL53LX_i2c_encode_int16_t(pdata->algo__crosstalk_compensation_y_plane_gradient_kcps, 2, pbuffer +  13);
-	VL53LX_i2c_encode_uint16_t(pdata->ref_spad_char__total_rate_target_mcps, 2, pbuffer +  15);
-	VL53LX_i2c_encode_int16_t(pdata->algo__part_to_part_range_offset_mm & 0x1FFF, 2, pbuffer +  17);
-	VL53LX_i2c_encode_int16_t(pdata->mm_config__inner_offset_mm, 2, pbuffer +  19);
-	VL53LX_i2c_encode_int16_t(pdata->mm_config__outer_offset_mm, 2, pbuffer +  21);
-
+	*(pbuffer +   0) =
+		pdata->global_config__spad_enables_ref_0;
+	*(pbuffer +   1) =
+		pdata->global_config__spad_enables_ref_1;
+	*(pbuffer +   2) =
+		pdata->global_config__spad_enables_ref_2;
+	*(pbuffer +   3) =
+		pdata->global_config__spad_enables_ref_3;
+	*(pbuffer +   4) =
+		pdata->global_config__spad_enables_ref_4;
+	*(pbuffer +   5) =
+		pdata->global_config__spad_enables_ref_5 & 0xF;
+	*(pbuffer +   6) =
+		pdata->global_config__ref_en_start_select;
+	*(pbuffer +   7) =
+		pdata->ref_spad_man__num_requested_ref_spads & 0x3F;
+	*(pbuffer +   8) =
+		pdata->ref_spad_man__ref_location & 0x3;
+	VL53LX_i2c_encode_uint16_t(
+		pdata->algo__crosstalk_compensation_plane_offset_kcps,
+		2,
+		pbuffer +   9);
+	VL53LX_i2c_encode_int16_t(
+		pdata->algo__crosstalk_compensation_x_plane_gradient_kcps,
+		2,
+		pbuffer +  11);
+	VL53LX_i2c_encode_int16_t(
+		pdata->algo__crosstalk_compensation_y_plane_gradient_kcps,
+		2,
+		pbuffer +  13);
+	VL53LX_i2c_encode_uint16_t(
+		pdata->ref_spad_char__total_rate_target_mcps,
+		2,
+		pbuffer +  15);
+	VL53LX_i2c_encode_int16_t(
+		pdata->algo__part_to_part_range_offset_mm & 0x1FFF,
+		2,
+		pbuffer +  17);
+	VL53LX_i2c_encode_int16_t(
+		pdata->mm_config__inner_offset_mm,
+		2,
+		pbuffer +  19);
+	VL53LX_i2c_encode_int16_t(
+		pdata->mm_config__outer_offset_mm,
+		2,
+		pbuffer +  21);
 	LOG_FUNCTION_END(status);
+
 
 	return status;
 }

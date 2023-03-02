@@ -9,6 +9,10 @@
  ******************************************************************************
  */
 
+
+
+
+
 #include "vl53lx_platform.h"
 #include "vl53lx_platform_ipp.h"
 #include "vl53lx_ll_def.h"
@@ -322,9 +326,15 @@ VL53LX_Error VL53LX_data_init(
 	VL53LX_DEV        Dev,
 	uint8_t           read_p2p_data)
 {
-	VL53LX_Error status            = VL53LX_ERROR_NONE;
-	VL53LX_LLDriverData_t    *pdev = VL53LXDevStructGetLLDriverHandle(Dev);
-	VL53LX_LLDriverResults_t *pres = VL53LXDevStructGetLLResultsHandle(Dev);
+
+
+	VL53LX_Error status       = VL53LX_ERROR_NONE;
+	VL53LX_LLDriverData_t    *pdev =
+			VL53LXDevStructGetLLDriverHandle(Dev);
+	VL53LX_LLDriverResults_t *pres =
+			VL53LXDevStructGetLLResultsHandle(Dev);
+
+
 
 	VL53LX_zone_objects_t    *pobjects;
 
@@ -332,7 +342,9 @@ VL53LX_Error VL53LX_data_init(
 
 	LOG_FUNCTION_START("");
 
-	VL53LX_init_ll_driver_state(Dev, VL53LX_DEVICESTATE_UNKNOWN);
+	VL53LX_init_ll_driver_state(
+			Dev,
+			VL53LX_DEVICESTATE_UNKNOWN);
 
 	pres->range_results.max_results    = VL53LX_MAX_RANGE_RESULTS;
 	pres->range_results.active_results = 0;
@@ -342,13 +354,18 @@ VL53LX_Error VL53LX_data_init(
 	for (i = 0; i < VL53LX_MAX_USER_ZONES; i++) {
 		pobjects = &(pres->zone_results.VL53LX_p_003[i]);
 		pobjects->xmonitor.VL53LX_p_016 = 0;
-		pobjects->xmonitor.VL53LX_p_017 = 0;
-		pobjects->xmonitor.VL53LX_p_011 = 0;
-		pobjects->xmonitor.range_status = VL53LX_DEVICEERROR_NOUPDATE;
+		pobjects->xmonitor.VL53LX_p_017  = 0;
+		pobjects->xmonitor.VL53LX_p_011          = 0;
+		pobjects->xmonitor.range_status =
+				VL53LX_DEVICEERROR_NOUPDATE;
 	}
+
+
 
 	pres->zone_hists.max_zones         = VL53LX_MAX_USER_ZONES;
 	pres->zone_hists.active_zones      = 0;
+
+
 
 	pres->zone_cal.max_zones           = VL53LX_MAX_USER_ZONES;
 	pres->zone_cal.active_zones        = 0;
@@ -361,13 +378,16 @@ VL53LX_Error VL53LX_data_init(
 	}
 
 	pdev->wait_method             = VL53LX_WAIT_METHOD_BLOCKING;
-	pdev->preset_mode             = VL53LX_DEVICEPRESETMODE_HISTOGRAM_MEDIUM_RANGE;
+	pdev->preset_mode   = VL53LX_DEVICEPRESETMODE_HISTOGRAM_MEDIUM_RANGE;
 	pdev->zone_preset             = 0;
 	pdev->measurement_mode        = VL53LX_DEVICEMEASUREMENTMODE_STOP;
 
-	pdev->offset_calibration_mode = VL53LX_OFFSETCALIBRATIONMODE__MM1_MM2__STANDARD;
-	pdev->offset_correction_mode  = VL53LX_OFFSETCORRECTIONMODE__MM1_MM2_OFFSETS;
-	pdev->dmax_mode = VL53LX_DEVICEDMAXMODE__FMT_CAL_DATA;
+	pdev->offset_calibration_mode =
+		VL53LX_OFFSETCALIBRATIONMODE__MM1_MM2__STANDARD;
+	pdev->offset_correction_mode  =
+		VL53LX_OFFSETCORRECTIONMODE__MM1_MM2_OFFSETS;
+	pdev->dmax_mode  =
+		VL53LX_DEVICEDMAXMODE__FMT_CAL_DATA;
 
 	pdev->phasecal_config_timeout_us  =  1000;
 	pdev->mm_config_timeout_us        =  2000;
@@ -380,8 +400,11 @@ VL53LX_Error VL53LX_data_init(
 	pdev->offset_results.active_results = 0;
 
 
-	pdev->gain_cal.standard_ranging_gain_factor = VL53LX_TUNINGPARM_LITE_RANGING_GAIN_FACTOR_DEFAULT;
-	pdev->gain_cal.histogram_ranging_gain_factor = VL53LX_TUNINGPARM_HIST_GAIN_FACTOR_DEFAULT;
+
+	pdev->gain_cal.standard_ranging_gain_factor =
+			VL53LX_TUNINGPARM_LITE_RANGING_GAIN_FACTOR_DEFAULT;
+	pdev->gain_cal.histogram_ranging_gain_factor =
+			VL53LX_TUNINGPARM_HIST_GAIN_FACTOR_DEFAULT;
 
 
 	VL53LX_init_version(Dev);
@@ -390,6 +413,7 @@ VL53LX_Error VL53LX_data_init(
 	memset(pdev->multi_bins_rec, 0, sizeof(pdev->multi_bins_rec));
 	pdev->bin_rec_pos = 0;
 	pdev->pos_before_next_recom = 0;
+
 
 
 	if (read_p2p_data > 0 && status == VL53LX_ERROR_NONE)
@@ -492,6 +516,7 @@ VL53LX_Error VL53LX_data_init(
 #ifdef VL53LX_LOG_ENABLE
 
 
+
 	VL53LX_print_static_nvm_managed(
 		&(pdev->stat_nvm),
 		"data_init():pdev->lldata.stat_nvm.",
@@ -548,6 +573,8 @@ VL53LX_Error VL53LX_data_init(
 VL53LX_Error VL53LX_read_p2p_data(
 	VL53LX_DEV        Dev)
 {
+
+
 
 	VL53LX_Error status       = VL53LX_ERROR_NONE;
 	VL53LX_LLDriverData_t *pdev = VL53LXDevStructGetLLDriverHandle(Dev);
@@ -2475,6 +2502,15 @@ VL53LX_Error VL53LX_clear_interrupt_and_enable_next_range(
 
 	LOG_FUNCTION_START("");
 
+
+
+
+
+
+
+
+
+
 	if (status == VL53LX_ERROR_NONE)
 		status = VL53LX_init_and_start_range(
 				Dev,
@@ -3056,6 +3092,8 @@ VL53LX_Error VL53LX_set_offset_correction_mode(
 	VL53LX_OffsetCorrectionMode    offset_cor_mode)
 {
 
+
+
 	VL53LX_Error  status = VL53LX_ERROR_NONE;
 
 	VL53LX_LLDriverData_t *pdev = VL53LXDevStructGetLLDriverHandle(Dev);
@@ -3074,6 +3112,8 @@ VL53LX_Error VL53LX_get_offset_correction_mode(
 	VL53LX_DEV                     Dev,
 	VL53LX_OffsetCorrectionMode   *poffset_cor_mode)
 {
+
+
 
 	VL53LX_Error  status = VL53LX_ERROR_NONE;
 
@@ -3095,6 +3135,7 @@ VL53LX_Error VL53LX_get_tuning_debug_data(
 	VL53LX_DEV                            Dev,
 	VL53LX_tuning_parameters_t           *ptun_data)
 {
+
 
 	VL53LX_Error  status = VL53LX_ERROR_NONE;
 
@@ -5231,6 +5272,8 @@ VL53LX_Error VL53LX_get_current_xtalk_settings(
 	VL53LX_xtalk_calibration_results_t *pxtalk
 	)
 {
+
+
 	VL53LX_Error  status = VL53LX_ERROR_NONE;
 	uint8_t i;
 
@@ -5238,17 +5281,20 @@ VL53LX_Error VL53LX_get_current_xtalk_settings(
 
 	LOG_FUNCTION_START("");
 
-	pxtalk->algo__crosstalk_compensation_plane_offset_kcps = pdev->xtalk_cfg.algo__crosstalk_compensation_plane_offset_kcps;
-	pxtalk->algo__crosstalk_compensation_x_plane_gradient_kcps = pdev->xtalk_cfg.algo__crosstalk_compensation_x_plane_gradient_kcps;
-	pxtalk->algo__crosstalk_compensation_y_plane_gradient_kcps = pdev->xtalk_cfg.algo__crosstalk_compensation_y_plane_gradient_kcps;
-
-	for (i = 0; i < VL53LX_BIN_REC_SIZE; i++){
-		pxtalk->algo__xtalk_cpo_HistoMerge_kcps[i] = pdev->xtalk_cal.algo__xtalk_cpo_HistoMerge_kcps[i];
-	}
+	pxtalk->algo__crosstalk_compensation_plane_offset_kcps =
+		pdev->xtalk_cfg.algo__crosstalk_compensation_plane_offset_kcps;
+	pxtalk->algo__crosstalk_compensation_x_plane_gradient_kcps =
+	pdev->xtalk_cfg.algo__crosstalk_compensation_x_plane_gradient_kcps;
+	pxtalk->algo__crosstalk_compensation_y_plane_gradient_kcps =
+	pdev->xtalk_cfg.algo__crosstalk_compensation_y_plane_gradient_kcps;
+	for (i = 0; i < VL53LX_BIN_REC_SIZE; i++)
+		pxtalk->algo__xtalk_cpo_HistoMerge_kcps[i] =
+		pdev->xtalk_cal.algo__xtalk_cpo_HistoMerge_kcps[i];
 
 	LOG_FUNCTION_END(status);
 
 	return status;
+
 }
 
 

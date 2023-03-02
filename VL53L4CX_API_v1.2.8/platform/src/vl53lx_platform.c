@@ -223,7 +223,7 @@ VL53LX_Error VL53LX_PollingDelay(VL53LX_DEV Dev){
 }
 
 VL53LX_Error VL53LX_WaitUs(VL53LX_DEV Dev, int32_t wait_us){
-    PollingDelayUS(1); // 152us actual
+    PollingDelayUS(1); // ~152us actual since it is the min allowed with 32.768kHz lfck
     return VL53LX_ERROR_NONE;
 }
 
