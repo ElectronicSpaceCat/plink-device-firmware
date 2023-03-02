@@ -1,9 +1,13 @@
-# Driver for the VL53LX ToF Sensors
+# Driver for the ToF Sensors
 
-This driver has been modified to interface over i2c with the bluetooth module and will not work if using the original.
+The VL53L4CX (long range) and VL53L4CD (short range) ToF sensors are used in this project.
 
-I used this driver for both the VL53L4CX and VL53L4CD in this project. There is an Ultra lite driver (ULD) for the VL53L4CD however I wanted more functionality that the VL53LX driver had.
+Each sensor has their own driver; however, the one for the VL53L4CX is more generic and covers all VL53LX sensors and it has more advanced sensor tuning. The Ultra lite driver (ULD) for the VL53L4CD is smaller in code size with basic functionallity. The former was chosen for both.
 
-The original can be found here:
+This driver has been modified (mainly in vl53lx_platform.c) to interface over I2C with the bluetooth module.
 
-https://www.st.com/en/embedded-software/stsw-img029.html
+### Original drivers:
+
+VL53L4CX - https://www.st.com/en/embedded-software/stsw-img029.html
+
+VL53L4CD - https://www.st.com/en/embedded-software/stsw-img026.html
