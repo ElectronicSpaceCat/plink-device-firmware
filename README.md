@@ -4,6 +4,7 @@ Suggested project folder structure:
 
 ```
 plink/
+├── gcc-arm-none-eabi
 ├── nRF_SDK
 ├── nrfutil.exe
 ├── plink-device-firmware
@@ -23,7 +24,12 @@ The SDK can be downloaded here:
 
 https://nsscprodmedia.blob.core.windows.net/prod/software-and-other-downloads/sdks/nrf5/binaries/nrf5_sdk_17.1.0_ddde560.zip
 
+ARM toolchain Version 10.3-2021.10 (the latest verison would likely work too)
+
+https://developer.arm.com/downloads/-/gnu-rm
+
 Segger J-Link is recommended for flashing the firmwar over the device's SWD pins on the main pcb.
+
 
 ## TODO
 * instructions on flashing firmware via segger
