@@ -59,7 +59,7 @@ const device_t* tof_device_get(void);
  *                     A configuration request is sent if (value == 0x7FFFFFFF).
  *                     Otherwise any (value != 0x7FFFFFFF) will be processed.
  */
-void tof_sensor_config_cmd(uint8_t cmd, uint8_t id, int32_t value);
+void tof_config_cmd(uint8_t cmd, uint8_t id, int32_t value);
 
 /**
  * Debug: Get a configuration value

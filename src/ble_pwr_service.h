@@ -60,9 +60,10 @@ NRF_SDH_BLE_OBSERVER(_name ## _obs,                 \
 #define BLE_UUID_PWR_SERVICE        0xF0DD
 
 // Defining 16-bit characteristic UUID
-#define BLE_UUID_PWR_SOURCE         0xBEBA // TODO: AG - Make sure the 16-bit char UUID does not conflict with registered ones
-#define BLE_UUID_PWR_BATT_STATUS    0xBEBB // TODO: AG - Make sure the 16-bit char UUID does not conflict with registered ones
-#define BLE_UUID_PWR_BATT_LEVEL     0xBEBC // TODO: AG - Make sure the 16-bit char UUID does not conflict with registered ones
+// TODO: AG - Make sure the 16-bit char UUIDs do not conflict with registered ones
+#define BLE_UUID_PWR_SOURCE         0xBEBA
+#define BLE_UUID_PWR_BATT_STATUS    0xBEBB
+#define BLE_UUID_PWR_BATT_LEVEL     0xBEBC
 
 // Forward declaration of the ble_pwr_t type.
 typedef struct ble_pwr_s ble_pwr_t;

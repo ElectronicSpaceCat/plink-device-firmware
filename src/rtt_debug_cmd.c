@@ -238,13 +238,13 @@ void rtt_debug_cmd_check(void) {
                 }
 
                 if(cmd == CONFIG_CMD_STORE){
-                    tof_sensor_config_cmd(cmd, INVALID_CONFIG_ID, 0);
+                    tof_config_cmd(cmd, INVALID_CONFIG_ID, 0);
                     return;
                 }
                 uint8_t id = (uint8_t) atol(token);
 
                 if(cmd == CONFIG_CMD_GET || cmd == CONFIG_CMD_RESET){
-                    tof_sensor_config_cmd(cmd, id, 0);
+                    tof_config_cmd(cmd, id, 0);
                     return;
                 }
 
@@ -254,7 +254,7 @@ void rtt_debug_cmd_check(void) {
                 }
 
                 int32_t value = (int32_t) atol(token);
-                tof_sensor_config_cmd(cmd, id, value);
+                tof_config_cmd(cmd, id, value);
             }
             return;
         }

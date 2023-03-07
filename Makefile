@@ -1,11 +1,11 @@
-PROJECT_NAME     := ble_plink_app_w_bonds
+PROJECT_NAME     := plink-device-firmware
 TARGETS          := nrf_plink_app
 OUTPUT_DIRECTORY := _Prod_makefile
 
 PROJ_DIR := ./
 LINKER_DIR := $(PROJ_DIR)/linker
-SDK_ROOT := $(PROJ_DIR)/nRF5_SDK_17.1.0_ddde560
-GNU_INSTALL_ROOT := $(PROJ_DIR)/gcc-arm-none-eabi-10.3-2021.10-win32/gcc-arm-none-eabi-10.3-2021.10/bin/
+SDK_ROOT := ../$(PROJ_DIR)/nRF5_SDK_17.1.0_ddde560
+GNU_INSTALL_ROOT := ../$(PROJ_DIR)/gcc-arm-none-eabi-10.3-2021.10-win32/gcc-arm-none-eabi-10.3-2021.10/bin/
 GNU_VERSION := 10.3.1
 GNU_PREFIX := arm-none-eabi
 SOFT_DEVICE := s112

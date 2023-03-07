@@ -295,6 +295,7 @@ ret_code_t ble_tof_init(ble_tof_t *p_tof, const ble_tof_init_t *p_tof_init) {
 
     return err_code;
 }
+
 // Update tof range data, notify if characteristic is enabled
 void tof_range_characteristic_update(ble_tof_t *p_tof, uint16_t *tof_range_value) {
     if(is_tof_range_enabled){
@@ -304,6 +305,7 @@ void tof_range_characteristic_update(ble_tof_t *p_tof, uint16_t *tof_range_value
         characteristic_set(p_tof, &p_tof->tof_range_char_handles, (uint8_t*) tof_range_value, sizeof(uint16_t), 0);
     }
 }
+
 // Update tof select data, notify if characteristic is enabled
 void tof_select_characteristic_update(ble_tof_t *p_tof, uint8_t sensor, uint8_t sensor_type) {
     uint16_t data = 0;
@@ -317,6 +319,7 @@ void tof_select_characteristic_update(ble_tof_t *p_tof, uint8_t sensor, uint8_t 
         characteristic_set(p_tof, &p_tof->tof_select_char_handles, (uint8_t*) &data, sizeof(uint16_t), 0);
     }
 }
+
 // Update tof config data, notify if characteristic is enabled
 void tof_config_characteristic_update(ble_tof_t *p_tof, uint8_t cmd, uint8_t id, int32_t value, uint8_t status) {
     static uint16_t buff_size = 7;
@@ -333,6 +336,7 @@ void tof_config_characteristic_update(ble_tof_t *p_tof, uint8_t cmd, uint8_t id,
         characteristic_set(p_tof, &p_tof->tof_config_char_handles, data, buff_size, 0);
     }
 }
+
 // Update tof status data, notify if characteristic is enabled
 void tof_status_characteristic_update(ble_tof_t *p_tof, uint8_t *tof_status_value) {
     if(is_tof_status_enabled){
@@ -342,6 +346,7 @@ void tof_status_characteristic_update(ble_tof_t *p_tof, uint8_t *tof_status_valu
         characteristic_set(p_tof, &p_tof->tof_status_char_handles, (uint8_t*) tof_status_value, sizeof(uint8_t), 0);
     }
 }
+
 // Update tof range enable data, notify if characteristic is enabled
 void tof_ranging_enable_characteristic_update(ble_tof_t *p_tof, uint8_t *tof_sampling_enabled) {
     if(is_tof_rng_en_enabled){
@@ -351,6 +356,7 @@ void tof_ranging_enable_characteristic_update(ble_tof_t *p_tof, uint8_t *tof_sam
         characteristic_set(p_tof, &p_tof->tof_ranging_enable_char_handles, (uint8_t*) tof_sampling_enabled, sizeof(uint8_t), 0);
     }
 }
+
 // Update tof reset data, notify if characteristic is enabled
 void tof_reset_characteristic_update(ble_tof_t *p_tof, uint8_t *reset) {
     if(is_tof_reset_enabled){

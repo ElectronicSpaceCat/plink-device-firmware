@@ -37,8 +37,8 @@
 #include <stdint.h>
 
 void tof_fds_init(void);
-ret_code_t tof_fds_write(uint8_t snsr_id, uint8_t* data, size_t data_len);
-ret_code_t tof_fds_read(uint8_t snsr_id, uint8_t* data, size_t data_len);
-ret_code_t tof_fds_delete(uint8_t snsr_id);
+ret_code_t tof_fds_write(uint8_t file_id, uint8_t* data, size_t data_len);
+ret_code_t tof_fds_read(uint8_t file_id, uint8_t* data, size_t data_len);
+ret_code_t tof_fds_delete(uint8_t file_id);
 
 #endif /* TOF_FDS_H */

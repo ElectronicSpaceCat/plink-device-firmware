@@ -251,7 +251,6 @@ typedef struct {
  */
 
 typedef struct {
-
 	uint32_t                             struct_version;
 	VL53LX_CustomerNvmManaged_t          customer;
 	VL53LX_additional_offset_cal_data_t  add_off_cal_data;
@@ -328,13 +327,10 @@ typedef VL53LX_additional_data_t VL53LX_AdditionalData_t;
 typedef struct {
 	VL53LX_LLDriverData_t   LLData;
 	/*!< Low Level Driver data structure */
-
 	VL53LX_LLDriverResults_t llresults;
 	/*!< Low Level Driver data structure */
-
 	VL53LX_DeviceParameters_t CurrentParameters;
 	/*!< Current Device Parameter */
-
 } VL53LX_DevData_t;
 
 

@@ -106,7 +106,7 @@ const device_t* tof_device_get(void) {
     return &device;
 }
 
-void tof_sensor_config_cmd(uint8_t cmd, uint8_t id, int32_t value){
+void tof_config_cmd(uint8_t cmd, uint8_t id, int32_t value){
     device.config_data.cmd = cmd;
     device.config_data.id = id;
     device.config_data.value = value;
@@ -116,7 +116,7 @@ void tof_sensor_config_cmd(uint8_t cmd, uint8_t id, int32_t value){
 
 int32_t tof_sensor_cached_config_get(uint8_t config_id){
     if(config_id < device.sensor->num_configs){
-        return device.sensor->config[config_id];
+        return device.sensor->config[config_id].value;
     }
     else{
         return INVALID_CONFIG_VALUE;

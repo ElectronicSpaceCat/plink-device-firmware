@@ -163,7 +163,7 @@ static void load_default_configs(device_t *device) {
     for (uint8_t i = 0; i < NUM_CONFIGS; ++i) {
         load_config(device->sensor, i);
         // Store copy of the factory default values
-        device->sensor->configDefault[i] = device->sensor->config[i];
+        device->sensor->config[i].value_default = device->sensor->config[i].value;
     }
 }
 
@@ -542,23 +542,23 @@ static void process_config_cmd(device_t *device) {
     switch (cmd) {
         case CONFIG_CMD_GET:
             // Override the value to send back
-            device->config_data.value = device->sensor->config[id];
+            device->config_data.value = device->sensor->config[id].value;
             return;
         case CONFIG_CMD_SET:
             // Return if value is the same
-            if (value == device->sensor->config[id]) {
+            if (value == device->sensor->config[id].value) {
                 return;
             }
             break;
         case CONFIG_CMD_RESET:
             // Return if value is the same
-            if (device->sensor->config[id] == device->sensor->configDefault[id]) {
-                device->config_data.value = device->sensor->configDefault[id];
+            if (device->sensor->config[id].value == device->sensor->config[id].value_default) {
+                device->config_data.value = device->sensor->config[id].value_default;
                 return;
             }
             else {
                 // Set the value to factory default
-                value = device->sensor->configDefault[id];
+                value = device->sensor->config[id].value_default;
             }
             break;
         case CONFIG_CMD_STORE:
@@ -575,7 +575,7 @@ static void process_config_cmd(device_t *device) {
     load_config(device->sensor, id);
 
     // Override the value to send back
-    device->config_data.value = device->sensor->config[id];
+    device->config_data.value = device->sensor->config[id].value;
 
     // Check status
     if (status) {
@@ -583,8 +583,8 @@ static void process_config_cmd(device_t *device) {
         return;
     }
     else if (CONFIG_CMD_SET == cmd
-            && value != device->sensor->config[id]
-            && device->sensor->config[id] != INVALID_CONFIG_VALUE) {
+            && value != device->sensor->config[id].value
+            && device->sensor->config[id].value != INVALID_CONFIG_VALUE) {
         device->config_data.status = CONFIG_STAT_MISMATCH;
         return;
     }
@@ -616,7 +616,7 @@ static uint8_t set_config(snsr_data_t *sensor, uint8_t id, int32_t value) {
         case CONFIG_SMUDGE_CORR_EN:
             status = VL53LX_SmudgeCorrectionEnable(VL53LX(sensor), (uint8_t) value);
             if(!status){
-                sensor->config[id] = value;
+                sensor->config[id].value = value;
             }
             break;
         case CONFIG_XTALK_COMP_EN:
@@ -650,7 +650,7 @@ static uint8_t set_config(snsr_data_t *sensor, uint8_t id, int32_t value) {
                 if (sensor->status == TOF_STATUS_READY) {
                     dev.config_data.cmd = CONFIG_CMD_GET;
                     dev.config_data.status = CONFIG_STAT_UPDATED;
-                    dev.config_data.value = sensor->config[dev.config_data.id];
+                    dev.config_data.value = sensor->config[dev.config_data.id].value;
                     tof_data_callback(&dev, TOF_DATA_CONFIG);
                 }
             }
@@ -671,7 +671,7 @@ static uint8_t load_config(snsr_data_t *sensor, uint8_t id) {
             uint8_t power_level;
             status = VL53LX_GetVCSELPowerAdjust(VL53LX(sensor), &power_level);
             if (!status) {
-                sensor->config[id] = (int32_t)power_level;
+                sensor->config[id].value = (int32_t)power_level;
             }
             break;
         }
@@ -679,7 +679,7 @@ static uint8_t load_config(snsr_data_t *sensor, uint8_t id) {
             int32_t pTuningParameterValue;
             status = VL53LX_GetTuningParameter(VL53LX(sensor), VL53LX_TUNINGPARM_PHASECAL_PATCH_POWER, &pTuningParameterValue);
             if (!status) {
-                sensor->config[id] = pTuningParameterValue;
+                sensor->config[id].value = pTuningParameterValue;
             }
             break;
         }
@@ -688,15 +688,15 @@ static uint8_t load_config(snsr_data_t *sensor, uint8_t id) {
             status = VL53LX_GetMeasurementTimingBudgetMicroSeconds(VL53LX(sensor), &time_budget);
             // Get the timing data
             if (!status) {
-                sensor->config[id] = (int32_t)time_budget;
+                sensor->config[id].value = (int32_t)time_budget;
             }
             break;
         }
         case CONFIG_OFFSET_MODE:
-            sensor->config[id] = (int32_t)VL53LX(sensor)->Data.LLData.offset_correction_mode;
+            sensor->config[id].value = (int32_t)VL53LX(sensor)->Data.LLData.offset_correction_mode;
             break;
         case CONFIG_DISTANCE_MODE:
-            sensor->config[id] = (int32_t)VL53LX(sensor)->Data.CurrentParameters.DistanceMode;
+            sensor->config[id].value = (int32_t)VL53LX(sensor)->Data.CurrentParameters.DistanceMode;
             break;
         case CONFIG_SMUDGE_CORR_EN:
             break;
@@ -704,7 +704,7 @@ static uint8_t load_config(snsr_data_t *sensor, uint8_t id) {
             uint8_t xtalk_comp_en;
             status = VL53LX_GetXTalkCompensationEnable(VL53LX(sensor), &xtalk_comp_en);
             if (!status) {
-                sensor->config[id] = (int32_t)xtalk_comp_en;
+                sensor->config[id].value = (int32_t)xtalk_comp_en;
             }
             break;
         }
@@ -712,7 +712,7 @@ static uint8_t load_config(snsr_data_t *sensor, uint8_t id) {
             VL53LX_UserRoi_t roi;
             status = VL53LX_GetUserROI(VL53LX(sensor), &roi);
             if (!status) {
-                memcpy(&sensor->config[id], &roi, sizeof(VL53LX_UserRoi_t));
+                memcpy(&sensor->config[id].value, &roi, sizeof(VL53LX_UserRoi_t));
             }
             break;
         }
@@ -722,7 +722,7 @@ static uint8_t load_config(snsr_data_t *sensor, uint8_t id) {
         case CONFIG_CAL_OFFSET_ZERO:
         case CONFIG_CAL_OFFSET_VCSEL:
         case CONFIG_CAL_XTALK:
-            sensor->config[id] = INVALID_CONFIG_VALUE;
+            sensor->config[id].value = INVALID_CONFIG_VALUE;
             break;
         default:
             break;
@@ -732,14 +732,14 @@ static uint8_t load_config(snsr_data_t *sensor, uint8_t id) {
 }
 
 static void get_store_data(snsr_data_t* sensor, store_data_t* data){
-    data->power_level = sensor->config[CONFIG_POWER_LEVEL];
-    data->phasecal_pwr_lvl = (uint8_t)sensor->config[CONFIG_PHASECAL_PATCH_PWR];
-    data->en_smudge_corr = (uint8_t)sensor->config[CONFIG_SMUDGE_CORR_EN];
-    data->en_xtalk_comp = (uint8_t)sensor->config[CONFIG_XTALK_COMP_EN];
-    data->time_budget = sensor->config[CONFIG_TIME_BUDGET];
-    data->offset_mode = sensor->config[CONFIG_OFFSET_MODE];
-    data->distance_mode = sensor->config[CONFIG_DISTANCE_MODE];
-    data->roi = (uint32_t)sensor->config[CONFIG_RECT_OF_INTEREST];
+    data->power_level = sensor->config[CONFIG_POWER_LEVEL].value;
+    data->phasecal_pwr_lvl = (uint8_t)sensor->config[CONFIG_PHASECAL_PATCH_PWR].value;
+    data->en_smudge_corr = (uint8_t)sensor->config[CONFIG_SMUDGE_CORR_EN].value;
+    data->en_xtalk_comp = (uint8_t)sensor->config[CONFIG_XTALK_COMP_EN].value;
+    data->time_budget = sensor->config[CONFIG_TIME_BUDGET].value;
+    data->offset_mode = sensor->config[CONFIG_OFFSET_MODE].value;
+    data->distance_mode = sensor->config[CONFIG_DISTANCE_MODE].value;
+    data->roi = (uint32_t)sensor->config[CONFIG_RECT_OF_INTEREST].value;
 
     VL53LX_GetCalibrationData(VL53LX(sensor), &data->cal);
 }

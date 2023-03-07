@@ -407,7 +407,7 @@ VL53LX_Error VL53LX_GetAdditionalData(VL53LX_DEV Dev,
  * @brief Set Tuning Parameter value for a given parameter ID
  *
  * @par Function Description
- * This function is used to improve the performance of the device. It permit to
+ * This function is used to improve the performance of the device. It permits to
  * change a particular value used for a timeout or a threshold or a constant
  * in an algorithm. The function will change the value of the parameter
  * identified by an unique ID.
@@ -447,12 +447,12 @@ VL53LX_Error VL53LX_GetTuningParameter(VL53LX_DEV Dev,
  *
  * @par Function Description
  * The reference SPAD initialization procedure determines the minimum amount
- * of reference spads to be enables to achieve a target reference signal rate
+ * of reference spads to be enabled to achieve a target reference signal rate
  * and should be performed once during initialization.
  *
  * @note This function Access to the device
  *
- * @param   Dev                          Device Handle
+ * @param   Dev                      Device Handle
  * @return  VL53LX_ERROR_NONE        Success
  * @return  "Other error code"       See ::VL53LX_Error
  */
@@ -633,7 +633,7 @@ VL53LX_Error VL53LX_PerformOffsetPerVcselCalibration(VL53LX_DEV Dev,
  * @brief Sets the Calibration Data.
  *
  * @par Function Description
- * This function set all the Calibration Data issued from the functions
+ * This function sets all the Calibration Data issued from the functions
  * @a VL53LX_PerformRefSpadManagement(), @a VL53LX_PerformXTalkCalibration,
  * @a VL53LX_PerformOffsetCalibration()
  *

@@ -145,7 +145,12 @@ typedef struct {
     uint8_t status;
 }config_cmd_data_t;
 
-// Forward declaration of the device_t type.
+typedef struct {
+    int32_t value;
+    int32_t value_default;
+}config_data_t;
+
+// Forward declaration of the device_t type (allows circular reference)
 typedef struct device_s device_t;
 
 typedef void (*stateHandler_t)(device_t*);
@@ -160,9 +165,8 @@ typedef struct {
     uint8_t status; // sensor status
     uint8_t error; // active error if any
     uint8_t num_configs; // number of available configurations within MAX_CONFIG_BUFF_SIZE
-    int32_t config[MAX_CONFIG_BUFF_SIZE]; // configuration value
-    int32_t configDefault[MAX_CONFIG_BUFF_SIZE]; // configuration value default
-    void* context; // used for various data as needed
+    config_data_t config[MAX_CONFIG_BUFF_SIZE]; // configuration value
+    void* context; // used for unique sensor data
 } snsr_data_t;
 
 struct device_s{
@@ -172,7 +176,7 @@ struct device_s{
     uint16_t distance_mm; // ranging distance
     uint16_t distance_mm_ref; // ranging distance reference (for debugging)
     uint16_t sample_count; // sample count, used in debug
-    config_cmd_data_t config_data; // configuration data
+    config_cmd_data_t config_data; // configuration command data
     reset_cmd_t reset_cmd; // reset command
     snsr_data_t sensors[NUM_TOF_SNSR]; // active sensor
     snsr_data_t* sensor; // active sensor

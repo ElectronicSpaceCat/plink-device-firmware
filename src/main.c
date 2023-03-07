@@ -235,7 +235,16 @@ static void tof_select_write_handler(uint16_t conn_handle, uint8_t tof_select) {
 
 // ble tof characteristic for setting the sensor configurations
 static void tof_config_write_handler(uint16_t conn_handle, uint8_t cmd, uint8_t id, int32_t value) {
-    tof_sensor_config_cmd(cmd, id, value);
+//    switch(trgt){
+//        case TARGET_DEVICE: // TODO: AG - Handle device configurations
+//            tof_device_config_cmd(cmd, id, value);
+//            break;
+//        case TARGET_SENSOR:
+            tof_config_cmd(cmd, id, value);
+//            break;
+//        default:
+//            break;
+//    }
 }
 
 // ble tof characteristic to start/stop the sensor ranging
