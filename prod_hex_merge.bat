@@ -30,19 +30,25 @@ ECHO OFF
 
 
 :: Change path below to point to the nrfutil.exe
-SET NRF_UTIL=.\nrfutil\nrfutil.exe
-:: Change path below to point to the nRF SDK
-SET NRF_SDK=.\nRF_bluetooth\nRF5_SDK_17.1.0_ddde560\components\softdevice\s112\hex
+SET NRF_UTIL=..\nrfutil.exe
+
 :: Change path below to point to the nRF softdevice (SD) hex file
-SET NRF_SD=s112_nrf52_7.2.0_softdevice.hex
+SET NRF_SD=..\nRF5_SDK_17.1.0_ddde560\components\softdevice\s112\hex\s112_nrf52_7.2.0_softdevice.hex
+
+:: Firmware location
+SET FW=..\plink-device-firmware\_Prod_makefile\nrf_plink_app.hex
+
+:: Bootloader location
+SET BL=..\plink-device-bootloader\_Prod_makefile\nrf_plink_bootloader.hex
+
 :: Output file name
-SET OUTPUT_NAME=prod_plink_app_s112
+SET OUTPUT_NAME=prod_plink_app
 
-%NRF_UTIL% settings generate --family NRF52 --application nrf_plink_app\_Prod\nrf_plink_app.hex --application-version-string "1.0.0" --bootloader-version 0 --bl-settings-version 2 bl_setting.hex
+%NRF_UTIL% settings generate --family NRF52 --application %FW% --application-version-string "1.0.0" --bootloader-version 0 --bl-settings-version 2 bl_setting.hex
 
-mergehex --merge bl_setting.hex nrf_plink_bootloader\_Prod\nrf_plink_bootloader.hex %NRF_SDK%\%NRF_SD% --output temp_merge.hex
+mergehex --merge bl_setting.hex %BL% %NRF_SD% --output temp_merge.hex
 
-mergehex --merge temp_merge.hex nrf_plink_app\_Prod\nrf_plink_app.hex --output %OUTPUT_NAME%.hex
+mergehex --merge temp_merge.hex %FW% --output %OUTPUT_NAME%.hex
 
 DEL bl_setting.hex
 DEL temp_merge.hex
