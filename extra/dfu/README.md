@@ -12,7 +12,7 @@ nrfutil keys generate private.key
 nrfutil keys display --key pk --format code private.key --out_file public_key.c
 
 * STEP 2
-Place public_key.c in the src folder of the bootloader project.
+Place public_key.c in the src folder of the bootloader project and compile.
 
 * STEP 3
 Run plink_dfu_pkg.bat to a generate the .zip package for doing over-the-air (OTA) device firmware update (DFU) updates to the device.
