@@ -6,13 +6,10 @@ ECHO OFF
 
 :: Modify the path defines as needed
 
-SET NRF_UTIL=.\
-SET HEX_PATH=C:\Users\Green\Documents\eclipse-workspace\nrf_plink_s112\dfu_w_bonds\nrf_plink_app\_Prod
-SET HEX_NAME=nRF_plink_app
+SET NRF_UTIL_LOC=..\..\..\
+SET HEX_FILE=..\..\..\plink-device-firmware\_Prod_makefile\nrf_plink_app.hex
 SET OUTPUT_NAME=plink
 
-%NRF_UTIL%\nrfutil.exe pkg generate --hw-version 52 --application-version-string "1.0.0" --application %HEX_PATH%\%HEX_NAME%.hex --sd-req 0x103 --key-file private.key %OUTPUT_NAME%.zip
-
-Created %OUTPUT_NAME%.zip
+%NRF_UTIL_LOC%\nrfutil.exe pkg generate --hw-version 52 --application-version-string "1.0.0" --application %HEX_FILE% --sd-req 0x103 --key-file private.key %OUTPUT_NAME%.zip
 
 ::PAUSE
