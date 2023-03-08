@@ -1,4 +1,4 @@
-# Firmware application
+# Firmware
 
 Suggested project folder structure:
 
