@@ -50,7 +50,7 @@ void tof_sm_init(void) {
 
     device = tof_device_get();
 
-    // Initialize the sensor data
+    // Initialize device data
     device->id_selected = TOF_SNSR_SHORT_RANGE;
     device->is_debug_enabled = false;
     device->is_ranging_enabled = false;

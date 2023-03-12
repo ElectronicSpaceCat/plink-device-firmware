@@ -168,7 +168,7 @@ typedef struct {
     uint8_t type;
     int32_t value;
     int32_t value_default;
-}config_data_t;
+}sensor_cfg_data_t;
 
 // Forward declaration of the device_t type (allows circular reference)
 typedef struct device_s device_t;
@@ -185,7 +185,7 @@ typedef struct {
     uint8_t status; // sensor status
     uint8_t error; // active error if any
     uint8_t num_configs; // number of available configurations within MAX_CONFIG_BUFF_SIZE
-    config_data_t config[MAX_CONFIG_BUFF_SIZE]; // configuration value
+    sensor_cfg_data_t config[MAX_CONFIG_BUFF_SIZE]; // configuration value
     void* context; // used for unique sensor data
 } snsr_data_t;
 
