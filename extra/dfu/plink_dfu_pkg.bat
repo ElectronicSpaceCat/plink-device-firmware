@@ -7,14 +7,14 @@ ECHO OFF
 :: Modify the path defines as needed
 
 SET NRF_UTIL_LOC=..\..\..\
-SET HEX_FILE=..\..\..\plink-device-firmware\_Prod_makefile\nrf_plink_app.hex
+SET HEX_FILE=..\..\..\plink-device-firmware\build\nrf_plink_app.hex
 SET OUTPUT_NAME=plink
 SET VERSION=1.0.0
 
 %NRF_UTIL_LOC%\nrfutil.exe pkg generate --hw-version 52 --application-version-string "%VERSION%" --application %HEX_FILE% --sd-req 0x103 --key-file private.key %OUTPUT_NAME%.zip
 
-ECHO "%VERSION%"
+::ECHO "%VERSION%"
 
 ECHO %VERSION% > version
 
-PAUSE
+::PAUSE

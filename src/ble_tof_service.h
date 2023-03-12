@@ -37,6 +37,7 @@
 #include "ble.h"
 #include "ble_srv_common.h"
 #include "nrf_sdh_ble.h"
+#include "tof_device.h"
 
 // TODO: AG - Make sure to generate unique 128-bit UUID here
 // Defining 128-bit base UUIDs
@@ -60,12 +61,13 @@ NRF_SDH_BLE_OBSERVER(_name ## _obs,                 \
 #define BLE_UUID_TOF_SERVICE             0xF00D
 
 // Defining 16-bit characteristic UUID
-#define BLE_UUID_TOF_RANGE               0xBEAA // TODO: AG - Make sure the 16-bit char UUID does not conflict with registered ones
-#define BLE_UUID_TOF_SELECT              0xBEAB // TODO: AG - Make sure the 16-bit char UUID does not conflict with registered ones
-#define BLE_UUID_TOF_CONFIG              0xBEAC // TODO: AG - Make sure the 16-bit char UUID does not conflict with registered ones
-#define BLE_UUID_TOF_STATUS              0xBEAD // TODO: AG - Make sure the 16-bit char UUID does not conflict with registered ones
-#define BLE_UUID_TOF_RANGING_ENABLE      0xBEAE // TODO: AG - Make sure the 16-bit char UUID does not conflict with registered ones
-#define BLE_UUID_TOF_RESET               0xBEAF // TODO: AG - Make sure the 16-bit char UUID does not conflict with registered ones
+// TODO: AG - Make sure the 16-bit char UUIDs do not conflict with registered ones
+#define BLE_UUID_TOF_RANGE               0xBEAA
+#define BLE_UUID_TOF_SELECT              0xBEAB
+#define BLE_UUID_TOF_CONFIG              0xBEAC
+#define BLE_UUID_TOF_STATUS              0xBEAD
+#define BLE_UUID_TOF_RANGING_ENABLE      0xBEAE
+#define BLE_UUID_TOF_RESET               0xBEAF
 
 // Forward declaration of the ble_tof_t type.
 typedef struct ble_tof_s ble_tof_t;
@@ -73,12 +75,12 @@ typedef struct ble_tof_s ble_tof_t;
 typedef void (*ble_tof_evt_handler_t) (ble_tof_t* p_tof, ble_evt_t const *p_ble_evt);
 
 typedef void (*ble_tof_write_handler_t) (uint16_t conn_handle, uint8_t data);
-typedef void (*ble_tof_write_config_handler_t) (uint16_t conn_handle, uint8_t cmd, uint8_t id, int32_t value);
+typedef void (*ble_tof_write_config_handler_t) (uint16_t conn_handle, uint8_t trgt, uint8_t cmd, uint8_t id, int32_t value);
 
 typedef struct
 {
     ble_tof_evt_handler_t            evt_handler;
-    bool                             support_notification;           /**< TRUE if notification of Battery Level measurement is supported. */
+    bool                             support_notification;
     ble_tof_write_handler_t          tof_select_write_handler;
     ble_tof_write_config_handler_t   tof_config_write_handler;
     ble_tof_write_handler_t          tof_ranging_enable_write_handler;
@@ -143,7 +145,7 @@ void tof_select_characteristic_update(ble_tof_t *p_tof, uint8_t sensor, uint8_t 
  * @param[in]   p_tof            Our Service structure.
  * @param[in]   characteristic_value     New characteristic value.
  */
-void tof_config_characteristic_update(ble_tof_t *p_tof, uint8_t cmd, uint8_t id, int32_t value, uint8_t status);
+void tof_config_characteristic_update(ble_tof_t *p_tof, config_cmd_data_t *config_cmd);
 
 /**@brief Function for updating and sending new characteristic values
  *

@@ -30,22 +30,19 @@
 
  *******************************************************************************/
 
-#ifndef TOF_SENSOR_H
-#define TOF_SENSOR_H
+#ifndef TOF_DEVICE_H
+#define TOF_DEVICE_H
 
 #include "boards.h"
 #include <stdint.h>
 
 #define MAX_CONFIG_BUFF_SIZE 20
+#define MAX_STORAGE_DATA_BUFF_SIZE 20
 #define INVALID_CONFIG_ID 0xFF
 #define INVALID_CONFIG_VALUE 0x7FFFFFFF
 #define I2C_ADDR_DEFAULT 0x29
 
 #define ERR_TIMEOUT_MS APP_TIMER_TICKS(2500)
-
-#define VL53L4CD   0
-#define VL53L4CX   1
-#define SENSOR_NA  2
 
 /*
 #define BUILD_STRUCT(name,s0,s1)                   \
@@ -76,6 +73,13 @@ typedef enum {
     NUM_TOF_SNSR,
     TOF_SNSR_UNKNOWN
 } sensor_id_t;
+
+typedef enum {
+    SNSR_TYPE_VL53L4CD = 0,
+    SNSR_TYPE_VL53L4CX,
+    NUM_SNSR_TYPES,
+    SNSR_TYPE_NA
+}sensor_type_t;
 
 /** Sensor error mask to merge
  * with the status */
@@ -131,6 +135,20 @@ typedef enum {
 } config_cmd_t;
 
 typedef enum {
+    CONFIG_TYPE_PARAM = 0,
+    CONFIG_TYPE_CAL,
+    NUM_CONFIG_TYPES,
+    CONFIG_TYPE_NA
+} sensor_config_type_t;
+
+typedef enum {
+    CONFIG_TRGT_SNSR = 0,
+    CONFIG_TRGT_EXT,
+    NUM_CONFIG_TRGTS,
+    CONFIG_TRGT_NA
+} config_trgt_t;
+
+typedef enum {
     TOF_RESET_DEVICE = 0,
     TOF_RESET_SENSOR,
     TOF_RESET_SENSOR_FACTORY,
@@ -139,13 +157,15 @@ typedef enum {
 } reset_cmd_t;
 
 typedef struct {
-    uint8_t cmd;
-    uint8_t id;
-    int32_t value;
-    uint8_t status;
+    uint8_t trgt; // target of interest
+    uint8_t cmd; // configuration command
+    uint8_t id; // id of the configuration
+    int32_t value; // value of the configuration
+    uint8_t status; // response status
 }config_cmd_data_t;
 
 typedef struct {
+    uint8_t type;
     int32_t value;
     int32_t value_default;
 }config_data_t;
@@ -153,7 +173,7 @@ typedef struct {
 // Forward declaration of the device_t type (allows circular reference)
 typedef struct device_s device_t;
 
-typedef void (*stateHandler_t)(device_t*);
+typedef void (*stateHandler_t)(void);
 
 typedef struct {
     char name[20]; // sensor name
@@ -176,20 +196,117 @@ struct device_s{
     uint16_t distance_mm; // ranging distance
     uint16_t distance_mm_ref; // ranging distance reference (for debugging)
     uint16_t sample_count; // sample count, used in debug
-    config_cmd_data_t config_data; // configuration command data
+    config_cmd_data_t config_cmd; // configuration command data
     reset_cmd_t reset_cmd; // reset command
-    snsr_data_t sensors[NUM_TOF_SNSR]; // active sensor
+    snsr_data_t sensors[NUM_TOF_SNSR]; // sensors
     snsr_data_t* sensor; // active sensor
-    uint8_t config_pending; // flag to indicated a configuration needs processing
+    int32_t ext_data[MAX_STORAGE_DATA_BUFF_SIZE];
 };
 
-/** Callback used to pass sensor data. */
+/**
+ * Callback used to pass sensor data
+ */
 void tof_data_callback(device_t *tof_data, snsr_data_type_t type);
 
-const char* get_type_name_str(uint8_t type);
-const char* get_cmd_str(uint8_t cmd);
-const char* get_status_str(uint8_t status);
-void config_cmd_message(const char* name, config_cmd_data_t* config_data);
-void config_resp_message(const char* name, config_cmd_data_t* config_data);
+/**
+ * Initialize the device
+ */
+void tof_device_init(void);
 
-#endif /* TOF_SENSOR_H */
+/**
+ * Un-Initialize the device
+ */
+void tof_device_uninit(void);
+
+/**
+ * Select sensor
+ * @param snsr_id
+ */
+void tof_sensor_select(sensor_id_t snsr_id);
+
+/**
+ * Get the device data
+ * @return
+ */
+device_t* tof_device_get(void);
+
+/**
+ * Sends a configuration request
+ * @param trgt       - Target of interest
+ * @param cmd        - Configuration command
+ * @param id         - Id of the configuration
+ * @param value      - Value to send
+ */
+void tof_config_cmd(uint8_t trgt, uint8_t cmd, uint8_t id, int32_t value);
+
+/**
+ * Debug: Get a configuration value
+ * @param config_id
+ * @return
+ */
+int32_t tof_sensor_cached_config_get(uint8_t config_id);
+
+/**
+ * Enable/Disable range sampling
+ * @param value
+ */
+void tof_sensor_ranging_enable_set(uint8_t value);
+
+/**
+ * Debug: Enable/Disable debug mode
+ * @param value
+ */
+void tof_sensor_debug_set(uint8_t value);
+
+/**
+ * Debug: Set the reference distance
+ * @param distance_mm_ref
+ */
+void tof_sensor_debug_set_ref(uint16_t distance_mm_ref);
+
+/**
+ * Debug: Get the reference distance
+ * @return distance_mm_ref
+ */
+uint16_t tof_sensor_debug_get_ref(void);
+
+/**
+ * Reset current sensor
+ */
+void tof_sensor_reset(uint8_t reset_type);
+
+/**
+ * Get the senosr name
+ * @return string
+ */
+const char* get_sensor_name_str(uint8_t snsr_type);
+
+/**
+ * Get the command name
+ * @return string
+ */
+const char* get_cmd_str(uint8_t cmd);
+
+/**
+ * Process configuration command for external data storage
+ * @param device
+ */
+void process_config_cmd_ext(void);
+
+/**
+ * Get the command status
+ * @return string
+ */
+const char* get_status_str(uint8_t status);
+
+/**
+ * Log output the configuration command
+ */
+void config_cmd_message(config_cmd_data_t* config_data);
+
+/**
+ * Log output the configuration command response
+ */
+void config_resp_message(config_cmd_data_t* config_data);
+
+#endif /* TOF_DEVICE_H */

@@ -45,88 +45,90 @@
 #include "vl53lx_api.h"
 
 // State functions
-static void state_boot(device_t *device);
-static void state_prepare(device_t *device);
-static void state_init(device_t *device);
-static void state_idle(device_t *device);
-static void state_start(device_t *device);
-static void state_stop(device_t *device);
-static void state_clear_int_and_start(device_t *device);
-static void state_standby(device_t *device);
-static void state_int_status(device_t *device);
-static void state_get_result(device_t *device);
-static void state_err(device_t *device);
-static void state_err_timeout(device_t *device);
-static void state_config(device_t *device);
-
-// Structure holding stored information for the sensors
-// that resides in FDS. It is 4-byte (word) aligned to
-// match FDS flash storage alignment type.
-typedef struct {
-    struct{
-        uint8_t power_level;
-        uint8_t phasecal_pwr_lvl;
-        uint8_t offset_mode;
-        uint8_t distance_mode;
-    };
-    struct{
-        uint8_t en_smudge_corr;
-        uint8_t en_xtalk_comp;
-        uint16_t unused;
-    };
-    int32_t time_budget;
-    uint32_t roi;
-    VL53LX_CalibrationData_t cal;
-}store_data_t;
+static void state_boot(void);
+static void state_prepare(void);
+static void state_init(void);
+static void state_idle(void);
+static void state_start(void);
+static void state_stop(void);
+static void state_clear_int_and_start(void);
+static void state_standby(void);
+static void state_int_status(void);
+static void state_get_result(void);
+static void state_err(void);
+static void state_err_timeout(void);
+static void state_config(void);
 
 // All sensor data
 typedef struct {
     VL53LX_Dev_t sensor;
-    store_data_t store;
+    VL53LX_CalibrationData_t cal;
 }sensor_data_t;
 
 // Helper functions
-static void process_config_cmd(device_t* device);
+static void process_config_cmd(void);
 static uint8_t set_config(snsr_data_t* sensor, uint8_t id, int32_t value);
 static uint8_t load_config(snsr_data_t* sensor, uint8_t id);
-static void get_store_data(snsr_data_t* sensor, store_data_t* data);
+static void init_config_types(snsr_data_t *sensor);
 static const char* get_config_str(uint8_t config);
+
+static int32_t cfg_buff[MAX_CONFIG_BUFF_SIZE];
 
 APP_TIMER_DEF(err_timeout_timer_id);
 
 // Helper macros to access sensor data
-#define VL53LX(snsr)            ((VL53LX_DEV)&(((sensor_data_t*)snsr->context)->sensor))
-#define VL53LX_DATA(snsr)       ((sensor_data_t*)snsr->context)
-#define VL53LX_DATA_STORE(snsr) (((sensor_data_t*)snsr->context)->store)
+#define VL53LX(snsr)        ((VL53LX_DEV)&(((sensor_data_t*)snsr->context)->sensor))
+#define VL53LX_DATA(snsr)   ((sensor_data_t*)snsr->context)
 
+#define RKEY_DATA_CAL  0x1011
+#define RKEY_DATA_USER 0x1015
+#define FILE_ID_MASK   0x1100
+#define FILD_ID(snsr_id) (FILE_ID_MASK | snsr_id)
 
+/**
+ * Configuration Notes:
+ *
+ * CONFIG_PHASECAL_PATCH_PWR - Setting to 2 increases the time of the first sample which is used as a reference
+ * CONFIG_RECT_OF_INTEREST   - If using value 101255430: TopLeft_XY(6,9) BottomRight_XY(9,6) is a
+ *                             4x4 SPAD array in a 15x15 box where BottomLeft is (0,0) and TopRight is (15,15)
+ */
 typedef enum {
     // Configurations
-    CONFIG_POWER_LEVEL = 0,
-    CONFIG_PHASECAL_PATCH_PWR, // Note: Setting to 2 increases the time of the first sample which is used as a reference
-    CONFIG_TIME_BUDGET,
-    CONFIG_OFFSET_MODE,
-    CONFIG_DISTANCE_MODE,
-    CONFIG_SMUDGE_CORR_EN,
-    CONFIG_XTALK_COMP_EN,
-    CONFIG_RECT_OF_INTEREST, // Note: If using value 101255430: TopLeft_XY(6,9) BottomRight_XY(9,6) is a 4x4 SPAD array in a 15x15 box where BottomLeft is (0,0) and TopRight is (15,15)
+    CONFIG_POWER_LEVEL = 0,  /**< CONFIG_POWER_LEVEL */
+    CONFIG_PHASECAL_PATCH_PWR,
+    CONFIG_TIME_BUDGET,      /**< CONFIG_TIME_BUDGET */
+    CONFIG_OFFSET_MODE,      /**< CONFIG_OFFSET_MODE */
+    CONFIG_DISTANCE_MODE,    /**< CONFIG_DISTANCE_MODE */
+    CONFIG_SMUDGE_CORR_EN,   /**< CONFIG_SMUDGE_CORR_EN */
+    CONFIG_XTALK_COMP_EN,    /**< CONFIG_XTALK_COMP_EN */
+    CONFIG_RECT_OF_INTEREST,
     // Calibrations
-    CONFIG_CAL_REFSPAD,
-    CONFIG_CAL_OFFSET_SIMPLE,
-    CONFIG_CAL_OFFSET_ZERO,
-    CONFIG_CAL_OFFSET_VCSEL,
-    CONFIG_CAL_XTALK,
-    NUM_CONFIGS,
+    CONFIG_CAL_REFSPAD,      /**< CONFIG_CAL_REFSPAD */
+    CONFIG_CAL_OFFSET_SIMPLE,/**< CONFIG_CAL_OFFSET_SIMPLE */
+    CONFIG_CAL_OFFSET_ZERO,  /**< CONFIG_CAL_OFFSET_ZERO */
+    CONFIG_CAL_OFFSET_VCSEL, /**< CONFIG_CAL_OFFSET_VCSEL */
+    CONFIG_CAL_XTALK,        /**< CONFIG_CAL_XTALK */
+    NUM_CONFIGS,             /**< NUM_CONFIGS */
 } config_t;
 
 #if (NUM_CONFIGS > MAX_CONFIG_BUFF_SIZE)
 #error Increase MAX_CONFIG_BUFF_SIZE to handle NUM_CONFIGS for this device
 #endif
 
-void vl53lx_init(snsr_data_t *sensor, uint8_t type, uint8_t id, uint8_t address, uint8_t xshut_pin) {
-    ASSERT(sensor)
+static device_t* device = NULL;
 
-    snprintf(sensor->name, sizeof(sensor->name), "%s_%d", get_type_name_str(type), id);
+void vl53lx_init(uint8_t type, uint8_t id, uint8_t address, uint8_t xshut_pin) {
+    if(!device){ // Since this can be called multiple times, only set it once
+        device = tof_device_get();
+    }
+
+    ASSERT(id >= NUM_TOF_SNSR);
+
+    snsr_data_t* sensor = &(device->sensors[id]);
+
+    ASSERT(device->sensor);
+
+    snprintf(sensor->name, sizeof(sensor->name), "%s_%d", get_sensor_name_str(type), id);
 
     sensor->id = id;
     sensor->type = type;
@@ -140,13 +142,15 @@ void vl53lx_init(snsr_data_t *sensor, uint8_t type, uint8_t id, uint8_t address,
     // Note: Required if using multiple instances of same sensor type
     sensor->context = (void*)malloc(sizeof(sensor_data_t));
 
-    ASSERT(sensor->context)
+    ASSERT(device->sensor->context);
 
-    /* Configure XSHUT pin (gpio0 on the sensor) as output */
+    /* Configure XSHUT pin as output */
     nrf_gpio_cfg_output(sensor->pin_xshut);
     /* Set XSHUT pin low to trigger a "fresh out of reset" condition */
     nrf_gpio_pin_clear(sensor->pin_xshut);
 
+    /* Init the configuration types */
+    init_config_types(sensor);
     /* Init the flash-data-storage if not already */
     tof_fds_init();
 }
@@ -158,16 +162,16 @@ static void err_timeout_timer_handler(void *p_context) {
     tof_data_callback(device, TOF_DATA_STATUS);
 }
 
-static void load_default_configs(device_t *device) {
+static void load_default_configs(void) {
     // Load and copy default configurations
-    for (uint8_t i = 0; i < NUM_CONFIGS; ++i) {
+    for (uint8_t i = 0; i < device->sensor->num_configs; ++i) {
         load_config(device->sensor, i);
         // Store copy of the factory default values
         device->sensor->config[i].value_default = device->sensor->config[i].value;
     }
 }
 
-static void state_boot(device_t *device) {
+static void state_boot(void) {
     // Restart the device by toggling the xshut pin
     nrf_gpio_pin_clear(device->sensor->pin_xshut);
     PollingDelayMS(5);
@@ -196,7 +200,7 @@ static void state_boot(device_t *device) {
     /* Set new address */
     if (!VL53LX_SetDeviceAddress(VL53LX(device->sensor), ((uint8_t)device->sensor->address << 1))) {
         VL53LX(device->sensor)->i2c_slave_address = device->sensor->address;
-        NRF_LOG_INFO("%s address set to %d", device->sensor->name, device->sensor->address);
+        NRF_LOG_INFO("%s address set to 0x%X", device->sensor->name, device->sensor->address);
     }
     else {
         NRF_LOG_INFO("%s err: setting address", device->sensor->name);
@@ -204,21 +208,23 @@ static void state_boot(device_t *device) {
         return;
     }
 
-//    // Get device information (only use if comparing sensor meta data)
-//    VL53LX_DeviceInfo_t dInfo;
-//    if (!VL53LX_GetDeviceInfo(VL53LX(device->sensor), &dInfo)) {
-//        NRF_LOG_INFO("%s get info", device->sensor->name);
-//    }
-//    else {
-//        NRF_LOG_INFO("%s err: get info", device->sensor->name);
-//        device->sensor->state = state_err;
-//        return;
-//    }
+    // Get device information (only use if comparing sensor meta data)
+    VL53LX_DeviceInfo_t dInfo;
+    if (!VL53LX_GetDeviceInfo(VL53LX(device->sensor), &dInfo)) {
+        NRF_LOG_INFO("%s get info", device->sensor->name);
+    }
+    else {
+        NRF_LOG_INFO("%s err: get info", device->sensor->name);
+        device->sensor->state = state_err;
+        return;
+    }
 
     device->sensor->state = state_prepare;
 }
 
-static void state_prepare(device_t *device) {
+static void state_prepare(void) {
+    uint8_t status = 0;
+
     // Data init
     if (!VL53LX_DataInit(VL53LX(device->sensor))) {
         NRF_LOG_INFO("%s data init", device->sensor->name);
@@ -230,78 +236,68 @@ static void state_prepare(device_t *device) {
     }
 
     // Load and copy default configurations
-    load_default_configs(device);
+    load_default_configs();
 
     // Is a factory reset requested?
     if (TOF_RESET_SENSOR_FACTORY == device->reset_cmd) {
-        // Yes - Delete the stored sensor data
-        tof_fds_delete(device->sensor->id);
+        // Yes - Delete all sensor data
+        tof_fds_delete(FILD_ID(device->sensor->id), RKEY_DATA_CAL);
+        tof_fds_delete(FILD_ID(device->sensor->id), RKEY_DATA_USER);
     }
 
-    // Read stored data from fds if it exists
-    if(!tof_fds_read(device->sensor->id, (uint8_t*)&VL53LX_DATA_STORE(device->sensor), sizeof(VL53LX_DATA_STORE(device->sensor)))){
-        // Set calibration data
-        if (!VL53LX_SetCalibrationData(VL53LX(device->sensor), &VL53LX_DATA_STORE(device->sensor).cal)) {
+    // Read cal data from storage if it exists
+    status = tof_fds_read(
+            FILD_ID(device->sensor->id),
+            RKEY_DATA_CAL,
+            (uint8_t*)&VL53LX_DATA(device->sensor)->cal,
+            sizeof(VL53LX_DATA(device->sensor)->cal));
+
+    // Cal data read?
+    if(!status){
+        // Yes - Set calibration data
+        if (!VL53LX_SetCalibrationData(VL53LX(device->sensor), &VL53LX_DATA(device->sensor)->cal)) {
             NRF_LOG_INFO("%s set cal data", device->sensor->name);
         }
         else {
             NRF_LOG_INFO("%s err: set cal data", device->sensor->name);
         }
-
-        // Set distance mode Note: this should be called after setting the calibration data
-        if(!set_config(device->sensor, CONFIG_DISTANCE_MODE, VL53LX_DATA_STORE(device->sensor).distance_mode)){
-            load_config(device->sensor, CONFIG_DISTANCE_MODE);
-            NRF_LOG_INFO("%s set %s", device->sensor->name, get_config_str(CONFIG_DISTANCE_MODE));
+    }
+    // No - Then run required start up calibrations
+    else{
+        // Perform ref spad
+        if (!set_config(device->sensor, CONFIG_CAL_REFSPAD, 0)) {
+            NRF_LOG_INFO("%s set %s", device->sensor->name, get_config_str(CONFIG_CAL_REFSPAD));
         }
-        else{
-            NRF_LOG_INFO("%s set %s: error", device->sensor->name, get_config_str(CONFIG_DISTANCE_MODE));
+        else {
+            NRF_LOG_INFO("%s set %s: error", device->sensor->name, get_config_str(CONFIG_CAL_REFSPAD));
+            device->sensor->state = state_err;
+            return;
         }
 
-        // Set the user configurations
-        int32_t ldata = 0;
-        for(int i = 0; i < NUM_CONFIGS; ++i){
+        // Perform xtalk
+        if (!set_config(device->sensor, CONFIG_CAL_XTALK, 0)) {
+            NRF_LOG_INFO("%s set %s", device->sensor->name, get_config_str(CONFIG_CAL_XTALK));
+        }
+        else {
+            NRF_LOG_INFO("%s set %s: error", device->sensor->name, get_config_str(CONFIG_CAL_XTALK));
+            device->sensor->state = state_err;
+            return;
+        }
+    }
 
-            // Skip distance mode since it's handled outside of this loop
-            if(i == CONFIG_DISTANCE_MODE){
+    // Read user data from storage if it exists
+    status = tof_fds_read(FILD_ID(device->sensor->id), RKEY_DATA_USER, (uint8_t*)&cfg_buff, sizeof(cfg_buff));
+
+    // User data read?
+    if(!status){
+        // Yes - Set all applicable configurations
+        for(int i = 0; i < device->sensor->num_configs; ++i){
+            // Skip non parameter configuration types
+            if(CONFIG_TYPE_PARAM != device->sensor->config[i].type){
                 continue;
             }
-
-            // Break when last configuration is hit..ie don't process calibrations
-            if(i > CONFIG_RECT_OF_INTEREST){
-                break;
-            }
-
-            switch(i){
-                case CONFIG_POWER_LEVEL:
-                    ldata = (int32_t) VL53LX_DATA_STORE(device->sensor).power_level;
-                    break;
-                case CONFIG_PHASECAL_PATCH_PWR:
-                    ldata = (int32_t) VL53LX_DATA_STORE(device->sensor).phasecal_pwr_lvl;
-                    break;
-                case CONFIG_TIME_BUDGET:
-                    ldata = (int32_t) VL53LX_DATA_STORE(device->sensor).time_budget;
-                    break;
-                case CONFIG_OFFSET_MODE:
-                    ldata = (int32_t) VL53LX_DATA_STORE(device->sensor).offset_mode;
-                    break;
-                case CONFIG_DISTANCE_MODE: // Should not hit this
-                    ldata = (int32_t) VL53LX_DATA_STORE(device->sensor).distance_mode;
-                    break;
-                case CONFIG_SMUDGE_CORR_EN:
-                    ldata = (int32_t) VL53LX_DATA_STORE(device->sensor).en_smudge_corr;
-                    break;
-                case CONFIG_XTALK_COMP_EN:
-                    ldata = (int32_t) VL53LX_DATA_STORE(device->sensor).en_xtalk_comp;
-                    break;
-                case CONFIG_RECT_OF_INTEREST:
-                    ldata = (int32_t) VL53LX_DATA_STORE(device->sensor).roi;
-                    break;
-                default:
-                    break;
-            }
-
             // Set the configuration. If no error then cache the value
-            if(CONFIG_STAT_ERROR != set_config(device->sensor, i, ldata)){
+            if(CONFIG_STAT_ERROR != set_config(device->sensor, i, cfg_buff[i])){
                 load_config(device->sensor, i);
                 NRF_LOG_INFO("%s set %s", device->sensor->name, get_config_str(i));
             }
@@ -311,33 +307,12 @@ static void state_prepare(device_t *device) {
             }
         }
     }
-    else{
-        // Perform ref spad
-        if (!set_config(device->sensor, CONFIG_CAL_REFSPAD, 0)) {
-            NRF_LOG_INFO("%s ref spad", device->sensor->name);
-        }
-        else {
-            NRF_LOG_INFO("%s err: ref spad", device->sensor->name);
-            device->sensor->state = state_err;
-            return;
-        }
-
-        // Perform xtalk
-        if (!set_config(device->sensor, CONFIG_CAL_XTALK, 0)) {
-            NRF_LOG_INFO("%s xtalk", device->sensor->name);
-        }
-        else {
-            NRF_LOG_INFO("%s err: xtalk", device->sensor->name);
-            device->sensor->state = state_err;
-            return;
-        }
-    }
 
     // Go to state_init
     device->sensor->state = state_init;
 }
 
-static void state_init(device_t *device) {
+static void state_init(void) {
     device->sample_count = 0;
     device->distance_mm = 0;
 
@@ -360,13 +335,13 @@ static void state_init(device_t *device) {
     device->sensor->state = state_idle;
 }
 
-static void state_idle(device_t *device) {
+static void state_idle(void) {
     // If this sensor is not the selected then standby
     if (device->sensor->id != device->id_selected) {
         device->sensor->state = state_standby;
     }
     // Process configuration commands
-    else if (true == device->config_pending) {
+    else if (CONFIG_TRGT_SNSR == device->config_cmd.trgt) {
         device->sensor->state = state_config;
     }
     // Reset the sensor if the reset command was sent
@@ -383,7 +358,7 @@ static void state_idle(device_t *device) {
     }
 }
 
-static void state_start(device_t *device) {
+static void state_start(void) {
     if (!VL53LX_StartMeasurement(VL53LX(device->sensor))) {
         device->sensor->state = state_clear_int_and_start;
     }
@@ -393,7 +368,7 @@ static void state_start(device_t *device) {
     }
 }
 
-static void state_stop(device_t *device) {
+static void state_stop(void) {
     // Make sure a to stop any err timers
     (void) app_timer_stop(err_timeout_timer_id);
 
@@ -410,13 +385,13 @@ static void state_stop(device_t *device) {
     }
 }
 
-void state_clear_int_and_start(device_t *device) {
+void state_clear_int_and_start(void) {
     // If this sensor is not the selected then standby
     if (device->sensor->id != device->id_selected) {
         device->sensor->state = state_stop;
     }
     // Process configuration commands
-    else if (true == device->config_pending) {
+    else if (CONFIG_TRGT_SNSR == device->config_cmd.trgt) {
         device->sensor->state = state_config;
     }
     // Reset the sensor if the command was sent
@@ -437,7 +412,7 @@ void state_clear_int_and_start(device_t *device) {
     }
 }
 
-static void state_standby(device_t *device) {
+static void state_standby(void) {
     // Wait here until the state machine switches to another sensor
     if (device->sensor->id != device->id_selected) {
         device->sensor->status = TOF_STATUS_STANDBY;
@@ -447,7 +422,7 @@ static void state_standby(device_t *device) {
     }
 }
 
-static void state_int_status(device_t *device) {
+static void state_int_status(void) {
     uint8_t pMeasurementDataReady;
     if (!VL53LX_GetMeasurementDataReady(VL53LX(device->sensor), &pMeasurementDataReady)) {
         if (pMeasurementDataReady) {
@@ -460,7 +435,7 @@ static void state_int_status(device_t *device) {
     }
 }
 
-static void state_get_result(device_t *device) {
+static void state_get_result(void) {
     VL53LX_MultiRangingData_t rangeData;
     if (!VL53LX_GetMultiRangingData(VL53LX(device->sensor), &rangeData)) {
         device->sample_count++;
@@ -490,7 +465,7 @@ static void state_get_result(device_t *device) {
     }
 }
 
-static void state_err(device_t *device) {
+static void state_err(void) {
     uint32_t err_code = app_timer_create(&err_timeout_timer_id, APP_TIMER_MODE_SINGLE_SHOT, err_timeout_timer_handler);
     APP_ERROR_CHECK(err_code);
     err_code = app_timer_start(err_timeout_timer_id, ERR_TIMEOUT_MS, device);
@@ -499,42 +474,35 @@ static void state_err(device_t *device) {
     device->sensor->state = state_err_timeout;
 }
 
-static void state_err_timeout(device_t *device) {
+static void state_err_timeout(void) {
     // Sit here until err timeout forces a reboot
 }
 
-static void state_config(device_t *device) {
+static void state_config(void) {
     // Print the command message
-    config_cmd_message(device->sensor->name, &device->config_data);
-    // Set the configuration
-    process_config_cmd(device);
-    // Clear the flag
-    device->config_pending = false;
+    config_cmd_message(&device->config_cmd);
+    // Process the configuration command
+    process_config_cmd();
     // Print the response message
-    config_resp_message(device->sensor->name, &device->config_data);
+    config_resp_message(&device->config_cmd);
     // Notify the user
     tof_data_callback(device, TOF_DATA_CONFIG);
+    // Reset the cmd id
+    device->config_cmd.trgt = CONFIG_TRGT_NA;
     // Reset state to idle
     device->sensor->state = state_idle;
 }
 
-static void process_config_cmd(device_t *device) {
-    uint8_t id = device->config_data.id;
-    uint8_t cmd = device->config_data.cmd;
-    int32_t value = device->config_data.value;
+static void process_config_cmd(void) {
+    uint8_t id = device->config_cmd.id;
+    uint8_t cmd = device->config_cmd.cmd;
+    int32_t value = device->config_cmd.value;
 
-    device->config_data.status = CONFIG_STAT_OK;
-
-    // Special command to store all configuration data
-    if(CONFIG_CMD_STORE == cmd && INVALID_CONFIG_ID == id){
-        get_store_data(device->sensor, &VL53LX_DATA_STORE(device->sensor));
-        tof_fds_write(device->sensor->id, (uint8_t*)&VL53LX_DATA_STORE(device->sensor), sizeof(VL53LX_DATA_STORE(device->sensor)));
-        return;
-    }
+    device->config_cmd.status = CONFIG_STAT_OK;
 
     // If configuration id not in list then exit function
-    if (id >= NUM_CONFIGS) {
-        device->config_data.status = CONFIG_STAT_NA;
+    if (id >= device->sensor->num_configs && cmd != CONFIG_CMD_STORE) {
+        device->config_cmd.status = CONFIG_STAT_NA;
         return;
     }
 
@@ -542,7 +510,7 @@ static void process_config_cmd(device_t *device) {
     switch (cmd) {
         case CONFIG_CMD_GET:
             // Override the value to send back
-            device->config_data.value = device->sensor->config[id].value;
+            device->config_cmd.value = device->sensor->config[id].value;
             return;
         case CONFIG_CMD_SET:
             // Return if value is the same
@@ -553,7 +521,7 @@ static void process_config_cmd(device_t *device) {
         case CONFIG_CMD_RESET:
             // Return if value is the same
             if (device->sensor->config[id].value == device->sensor->config[id].value_default) {
-                device->config_data.value = device->sensor->config[id].value_default;
+                device->config_cmd.value = device->sensor->config[id].value_default;
                 return;
             }
             else {
@@ -561,10 +529,25 @@ static void process_config_cmd(device_t *device) {
                 value = device->sensor->config[id].value_default;
             }
             break;
-        case CONFIG_CMD_STORE:
+        case CONFIG_CMD_STORE: // Note: Currently only stores all configurations, not done singly
+            // Get cal data
+            VL53LX_GetCalibrationData(VL53LX(device->sensor), &VL53LX_DATA(device->sensor)->cal);
+            // Store the cal data
+            tof_fds_write(
+                    FILD_ID(device->sensor->id),
+                    RKEY_DATA_CAL,
+                    (uint8_t*)&VL53LX_DATA(device->sensor)->cal,
+                    sizeof(VL53LX_DATA(device->sensor)->cal));
+
+            // Buffer user configurations
+            for(int i = 0; i < device->sensor->num_configs; ++i){
+                cfg_buff[i] = device->sensor->config[i].value;
+            }
+            // Store user configurations
+            tof_fds_write(FILD_ID(device->sensor->id), RKEY_DATA_USER, (uint8_t*)&cfg_buff, device->sensor->num_configs);
             return;
         default:
-            device->config_data.status = CONFIG_STAT_INVALID;
+            device->config_cmd.status = CONFIG_STAT_INVALID;
             return;
     }
 
@@ -575,17 +558,17 @@ static void process_config_cmd(device_t *device) {
     load_config(device->sensor, id);
 
     // Override the value to send back
-    device->config_data.value = device->sensor->config[id].value;
+    device->config_cmd.value = device->sensor->config[id].value;
 
     // Check status
     if (status) {
-        device->config_data.status = CONFIG_STAT_ERROR;
+        device->config_cmd.status = CONFIG_STAT_ERROR;
         return;
     }
     else if (CONFIG_CMD_SET == cmd
             && value != device->sensor->config[id].value
             && device->sensor->config[id].value != INVALID_CONFIG_VALUE) {
-        device->config_data.status = CONFIG_STAT_MISMATCH;
+        device->config_cmd.status = CONFIG_STAT_MISMATCH;
         return;
     }
     else {
@@ -644,13 +627,13 @@ static uint8_t set_config(snsr_data_t *sensor, uint8_t id, int32_t value) {
             if(!status){
                 // TimeBudget is modified by xtalk calibration so send notification
                 device_t dev;
-                dev.config_data.id = CONFIG_TIME_BUDGET;
-                status = load_config(sensor, dev.config_data.id);
+                dev.config_cmd.id = CONFIG_TIME_BUDGET;
+                status = load_config(sensor, dev.config_cmd.id);
                 // Notify of change only when in Ready status
                 if (sensor->status == TOF_STATUS_READY) {
-                    dev.config_data.cmd = CONFIG_CMD_GET;
-                    dev.config_data.status = CONFIG_STAT_UPDATED;
-                    dev.config_data.value = sensor->config[dev.config_data.id].value;
+                    dev.config_cmd.cmd = CONFIG_CMD_GET;
+                    dev.config_cmd.status = CONFIG_STAT_UPDATED;
+                    dev.config_cmd.value = sensor->config[dev.config_cmd.id].value;
                     tof_data_callback(&dev, TOF_DATA_CONFIG);
                 }
             }
@@ -731,17 +714,33 @@ static uint8_t load_config(snsr_data_t *sensor, uint8_t id) {
     return status;
 }
 
-static void get_store_data(snsr_data_t* sensor, store_data_t* data){
-    data->power_level = sensor->config[CONFIG_POWER_LEVEL].value;
-    data->phasecal_pwr_lvl = (uint8_t)sensor->config[CONFIG_PHASECAL_PATCH_PWR].value;
-    data->en_smudge_corr = (uint8_t)sensor->config[CONFIG_SMUDGE_CORR_EN].value;
-    data->en_xtalk_comp = (uint8_t)sensor->config[CONFIG_XTALK_COMP_EN].value;
-    data->time_budget = sensor->config[CONFIG_TIME_BUDGET].value;
-    data->offset_mode = sensor->config[CONFIG_OFFSET_MODE].value;
-    data->distance_mode = sensor->config[CONFIG_DISTANCE_MODE].value;
-    data->roi = (uint32_t)sensor->config[CONFIG_RECT_OF_INTEREST].value;
-
-    VL53LX_GetCalibrationData(VL53LX(sensor), &data->cal);
+static void init_config_types(snsr_data_t *sensor){
+    for(int i = 0; i < sensor->num_configs; ++i){
+        switch (i) {
+            /** Parameters */
+            case CONFIG_POWER_LEVEL:
+            case CONFIG_PHASECAL_PATCH_PWR:
+            case CONFIG_TIME_BUDGET:
+            case CONFIG_OFFSET_MODE:
+            case CONFIG_DISTANCE_MODE:
+            case CONFIG_SMUDGE_CORR_EN:
+            case CONFIG_XTALK_COMP_EN:
+            case CONFIG_RECT_OF_INTEREST:
+                sensor->config[i].type = CONFIG_TYPE_PARAM;
+                break;
+            /** Calibrations */
+            case CONFIG_CAL_REFSPAD:
+            case CONFIG_CAL_OFFSET_SIMPLE:
+            case CONFIG_CAL_OFFSET_ZERO:
+            case CONFIG_CAL_OFFSET_VCSEL:
+            case CONFIG_CAL_XTALK:
+                sensor->config[i].type = CONFIG_TYPE_CAL;
+                break;
+            default:
+                sensor->config[i].type = CONFIG_TYPE_NA;
+                break;
+        }
+    }
 }
 
 static const char* get_config_str(uint8_t config) {

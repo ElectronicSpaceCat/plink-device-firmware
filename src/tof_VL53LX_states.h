@@ -33,8 +33,8 @@
 #ifndef TOF_VL53LX_STATES_H
 #define TOF_VL53LX_STATES_H
 
-#include "tof_sensor.h"
+#include "tof_device.h"
 
-void vl53lx_init(snsr_data_t *sensor, uint8_t type, uint8_t id, uint8_t address, uint8_t xshut_pin);
+void vl53lx_init(uint8_t type, uint8_t id, uint8_t address, uint8_t xshut_pin);
 
 #endif /* TOF_VL53LX_STATES_H */

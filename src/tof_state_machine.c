@@ -37,118 +37,47 @@
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
 
-#include "tof_twi.h"
 #include "timer_delay.h"
-
 #include "tof_fds.h"
-
-
-#define SENSOR_SHORT VL53L4CD
-#define SENSOR_LONG  VL53L4CX
-
-#define SENSOR_SHORT_ADDR (I2C_ADDR_DEFAULT + 1)
-#define SENSOR_LONG_ADDR (I2C_ADDR_DEFAULT + 2)
 
 #include "tof_VL53LX_states.h"
 
-static device_t device;
+static device_t* device;
 
 void tof_sm_init(void) {
-    /* Initialize the i2c interface */
-    tof_twi_init();
+    // Initialize device
+    tof_device_init();
+
+    device = tof_device_get();
 
     // Initialize the sensor data
-    device.id_selected = TOF_SNSR_SHORT_RANGE;
-    device.is_debug_enabled = false;
-    device.is_ranging_enabled = false;
-    device.config_data.cmd = CONFIG_CMD_NA;
+    device->id_selected = TOF_SNSR_SHORT_RANGE;
+    device->is_debug_enabled = false;
+    device->is_ranging_enabled = false;
+    device->config_cmd.trgt = CONFIG_TRGT_NA;
 
     // Initialize the short range sensor
-    vl53lx_init(&device.sensors[TOF_SNSR_SHORT_RANGE], SENSOR_SHORT, TOF_SNSR_SHORT_RANGE, SENSOR_SHORT_ADDR, PIN_TOF_SHORT_XSHUT);
+    vl53lx_init(SNSR_TYPE_VL53L4CD, TOF_SNSR_SHORT_RANGE, (I2C_ADDR_DEFAULT + 1), PIN_TOF_SHORT_XSHUT);
 
     // Initialize the long range sensor
-    vl53lx_init(&device.sensors[TOF_SNSR_LONG_RANGE], SENSOR_LONG, TOF_SNSR_LONG_RANGE, SENSOR_LONG_ADDR, PIN_TOF_LONG_XSHUT);
+    vl53lx_init(SNSR_TYPE_VL53L4CX, TOF_SNSR_LONG_RANGE, (I2C_ADDR_DEFAULT + 2), PIN_TOF_LONG_XSHUT);
 
     // Set the default sensor on startup
-    device.sensor = &device.sensors[TOF_SNSR_SHORT_RANGE];
+    device->sensor = &device->sensors[TOF_SNSR_SHORT_RANGE];
 }
 
 void tof_sm_uninit(void) {
-    tof_twi_uninit();
+    tof_device_uninit();
 }
 
 void tof_sm_run(void) {
     // Switch sensors only when the current sensor status is in Standby or Error
     // Note: Switching should be done here and not by the sensors in the event of sensor error
-    if(device.sensor->id != device.id_selected &&
-        (TOF_STATUS_STANDBY == device.sensor->status  || TOF_STATUS_ERROR == device.sensor->status)){
-        device.sensor = &device.sensors[device.id_selected];
+    if(device->sensor->id != device->id_selected &&
+        (TOF_STATUS_STANDBY == device->sensor->status  || TOF_STATUS_ERROR == device->sensor->status)){
+        device->sensor = &device->sensors[device->id_selected];
     }
 
     // Run current state
-    device.sensor->state(&device);
-}
-
-void tof_sensor_select(sensor_id_t id) {
-    if (device.sensor->id == id) {
-        NRF_LOG_INFO("%s already selected", device.sensor->name);
-    }
-    else if (id < NUM_TOF_SNSR) {
-        device.id_selected = id;
-        NRF_LOG_INFO("%s requested", device.sensors[id].name);
-    }
-    else {
-        NRF_LOG_INFO("invalid sensor id");
-    }
-}
-
-const device_t* tof_device_get(void) {
-    return &device;
-}
-
-void tof_config_cmd(uint8_t cmd, uint8_t id, int32_t value){
-    device.config_data.cmd = cmd;
-    device.config_data.id = id;
-    device.config_data.value = value;
-    // Set pending flag
-    device.config_pending = true;
-}
-
-int32_t tof_sensor_cached_config_get(uint8_t config_id){
-    if(config_id < device.sensor->num_configs){
-        return device.sensor->config[config_id].value;
-    }
-    else{
-        return INVALID_CONFIG_VALUE;
-    }
-}
-
-void tof_sensor_debug_set(uint8_t value) {
-    device.is_debug_enabled = value;
-}
-
-void tof_sensor_debug_set_ref(uint16_t distance_mm_ref) {
-    device.distance_mm_ref = distance_mm_ref;
-}
-
-uint16_t tof_sensor_debug_get_ref(void) {
-    return device.distance_mm_ref;
-}
-
-void tof_sensor_ranging_enable_set(uint8_t value) {
-    if(device.is_ranging_enabled != value){
-        if(value){
-            device.is_ranging_enabled = 1;
-            NRF_LOG_INFO("%s ranging enabled", device.sensor->name);
-        }
-        else{
-            device.is_ranging_enabled = 0;
-            NRF_LOG_INFO("%s ranging disabled", device.sensor->name);
-        }
-    }
-    tof_data_callback(&device, TOF_DATA_SAMPLING_ENABLED);
-}
-
-void tof_sensor_reset(uint8_t reset_type){
-    device.reset_cmd = reset_type;
+    device->sensor->state();
 }

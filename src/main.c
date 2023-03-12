@@ -234,17 +234,8 @@ static void tof_select_write_handler(uint16_t conn_handle, uint8_t tof_select) {
 }
 
 // ble tof characteristic for setting the sensor configurations
-static void tof_config_write_handler(uint16_t conn_handle, uint8_t cmd, uint8_t id, int32_t value) {
-//    switch(trgt){
-//        case TARGET_DEVICE: // TODO: AG - Handle device configurations
-//            tof_device_config_cmd(cmd, id, value);
-//            break;
-//        case TARGET_SENSOR:
-            tof_config_cmd(cmd, id, value);
-//            break;
-//        default:
-//            break;
-//    }
+static void tof_config_write_handler(uint16_t conn_handle, uint8_t trgt, uint8_t cmd, uint8_t id, int32_t value) {
+    tof_config_cmd(trgt, cmd, id, value);
 }
 
 // ble tof characteristic to start/stop the sensor ranging
@@ -287,12 +278,7 @@ void tof_data_callback(device_t *device, snsr_data_type_t type) {
             break;
         case TOF_DATA_CONFIG:
             // Update configuration characteristic
-            tof_config_characteristic_update(
-                    &m_tof,
-                    device->config_data.cmd,
-                    device->config_data.id,
-                    device->config_data.value,
-                    device->config_data.status);
+            tof_config_characteristic_update(&m_tof, &device->config_cmd);
             break;
         case TOF_DATA_SAMPLING_ENABLED:
             // Update tof enable_sampling characteristic

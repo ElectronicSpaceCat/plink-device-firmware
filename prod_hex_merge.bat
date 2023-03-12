@@ -3,7 +3,7 @@
 ECHO OFF
 
 :: ============================================================
-:: This script creates bootloader settings and then
+:: This script generates the bootloader settings and then
 :: merges the bootloader + bootloader settings + soft device + application
 :: into one hex file for production programming.
 :: ============================================================
@@ -36,10 +36,10 @@ SET NRF_UTIL=..\nrfutil.exe
 SET NRF_SD=..\nRF5_SDK_17.1.0_ddde560\components\softdevice\s112\hex\s112_nrf52_7.2.0_softdevice.hex
 
 :: Firmware location
-SET FW=..\plink-device-firmware\_Prod_makefile\nrf_plink_app.hex
+SET FW=..\plink-device-firmware\build\nrf_plink_app.hex
 
 :: Bootloader location
-SET BL=..\plink-device-bootloader\_Prod_makefile\nrf_plink_bootloader.hex
+SET BL=..\plink-device-bootloader\build\nrf_plink_bootloader.hex
 
 :: Output file name
 SET OUTPUT_NAME=prod_plink_app

@@ -99,18 +99,24 @@ void rtt_debug_cmd_check(void) {
             SEGGER_RTT_WriteString(0, "ble:tof|pwr:print debug ble:tof|pwr service\r");
             SEGGER_RTT_WriteString(0, "snsr:id           snsr - get snsr id, snsr:id select snsr\r");
             SEGGER_RTT_WriteString(0, "ref:value         ref - get ref dist, ref:value - set ref dist\r");
-            SEGGER_RTT_WriteString(0, "cfg:cmd:id:value  send config cmd, type -cmds for list\r");
+            SEGGER_RTT_WriteString(0, "cfg:trgt:cmd:id:value  send config cmd, -cmds for cmd list, -trgts for trgt list\r");
             SEGGER_RTT_WriteString(0, "cfg:all           get all configs\r");
             SEGGER_RTT_WriteString(0, "rst:s|sf|d        reset: s - sensor, sf - sensor factory, d - device\r");
             SEGGER_RTT_WriteString(0, "shutdown          shutdown device\r");
             return;
         }
         else if (!strcmp(token, "-cmds")) {
-            SEGGER_RTT_WriteString(0, "Config Commands:\r");
+            SEGGER_RTT_WriteString(0, "config Commands:\r");
             SEGGER_RTT_WriteString(0, "0  get\r");
             SEGGER_RTT_WriteString(0, "1  set\r");
             SEGGER_RTT_WriteString(0, "2  reset\r");
             SEGGER_RTT_WriteString(0, "3  store\r");
+            return;
+        }
+        else if (!strcmp(token, "-trgts")) {
+            SEGGER_RTT_WriteString(0, "config targets:\r");
+            SEGGER_RTT_WriteString(0, "0  active sensor\r");
+            SEGGER_RTT_WriteString(0, "1  storage\r");
             return;
         }
         else if (!strcmp(token, "batt")) {
@@ -231,20 +237,23 @@ void rtt_debug_cmd_check(void) {
                 }
             }
             else {
-                uint8_t cmd = (uint8_t) atol(token);
+                uint8_t trgt = (uint8_t) atol(token);
                 token = strtok(NULL, ":");
                 if (NULL == token) {
                     return;
                 }
 
-                if(cmd == CONFIG_CMD_STORE){
-                    tof_config_cmd(cmd, INVALID_CONFIG_ID, 0);
+                uint8_t cmd = (uint8_t) atol(token);
+
+                token = strtok(NULL, ":");
+                if (NULL == token) {
                     return;
                 }
+
                 uint8_t id = (uint8_t) atol(token);
 
-                if(cmd == CONFIG_CMD_GET || cmd == CONFIG_CMD_RESET){
-                    tof_config_cmd(cmd, id, 0);
+                if(cmd != CONFIG_CMD_SET){
+                    tof_config_cmd(trgt, cmd, id, 0);
                     return;
                 }
 
@@ -254,7 +263,7 @@ void rtt_debug_cmd_check(void) {
                 }
 
                 int32_t value = (int32_t) atol(token);
-                tof_config_cmd(cmd, id, value);
+                tof_config_cmd(trgt, cmd, id, value);
             }
             return;
         }

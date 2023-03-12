@@ -155,12 +155,7 @@ static uint32_t our_char_add(ble_pwr_t *p_pwr, uint16_t uuid, bool read, bool wr
   attr_char_value.init_len = value_size;
   uint8_t buff[value_size];
   int32_t value = value_init;
-  if(value_size > sizeof(value_init)){
-      memset(&buff[0], value_init, value_size);
-  }
-  else{
-      memcpy(&buff[0], &value, value_size);
-  }
+  memcpy(&buff[0], &value, value_size);
   attr_char_value.p_value = &buff[0];
 
   // Add our new characteristic to the service

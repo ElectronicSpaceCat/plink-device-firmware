@@ -1,6 +1,6 @@
 PROJECT_NAME     := plink-device-firmware
 TARGETS          := nrf_plink_app
-OUTPUT_DIRECTORY := _Prod_makefile
+OUTPUT_DIRECTORY := build
 
 PROJ_DIR := ./
 LINKER_DIR := $(PROJ_DIR)/linker
@@ -10,7 +10,7 @@ GNU_VERSION := 10.3.1
 GNU_PREFIX := arm-none-eabi
 SOFT_DEVICE := s112
 SOFT_DEVICE_VERSION := 7.2.0
-VL53L4CX_ROOT := $(PROJ_DIR)/VL53L4CX_API_v1.2.8
+VL53L4CX_ROOT := $(PROJ_DIR)/libs/VL53L4CX_API_v1.2.8
 
 $(OUTPUT_DIRECTORY)/$(TARGETS).out: \
   LINKER_SCRIPT  := $(LINKER_DIR)/ble_gcc_nrf52_sd.ld
@@ -25,7 +25,7 @@ SRC_FILES += \
 	$(PROJ_DIR)/src/tof_VL53LX_states.c \
 	$(PROJ_DIR)/src/tof_fds.c \
 	$(PROJ_DIR)/src/tof_pwr_monitor.c \
-	$(PROJ_DIR)/src/tof_sensor.c \
+	$(PROJ_DIR)/src/tof_device.c \
 	$(PROJ_DIR)/src/tof_state_machine.c \
 	$(PROJ_DIR)/src/tof_twi.c \
 	$(VL53L4CX_ROOT)/core/src/vl53lx_api.c \

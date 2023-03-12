@@ -109,10 +109,15 @@ static void on_write(ble_tof_t *p_tof, ble_evt_t const *p_ble_evt) {
     }
     // ToF sensor config write handle
     else if (p_evt_write->handle == p_tof->tof_config_char_handles.value_handle) {
-        if ((p_evt_write->len == 6) && (p_tof->tof_config_write_handler != NULL)) {
+        if ((p_evt_write->len == 7) && (p_tof->tof_config_write_handler != NULL)) {
             int32_t value;
-            memcpy(&value, &p_evt_write->data[2], sizeof(int32_t));
-            p_tof->tof_config_write_handler(p_ble_evt->evt.gap_evt.conn_handle, p_evt_write->data[0], p_evt_write->data[1], value);
+            memcpy(&value, &p_evt_write->data[3], sizeof(int32_t));
+            p_tof->tof_config_write_handler(
+                    p_ble_evt->evt.gap_evt.conn_handle,
+                    p_evt_write->data[0],
+                    p_evt_write->data[1],
+                    p_evt_write->data[2],
+                    value);
         }
     }
     // ToF sensor ranging enable write handle
@@ -238,6 +243,7 @@ static uint32_t our_char_add(ble_tof_t *p_tof, uint16_t uuid, bool read, bool wr
     attr_char_value.init_len = value_size;
     uint8_t buff[value_size];
     int32_t value = value_init;
+    // If size of data greater than size of value_init then do a memset instead
     if (value_size > sizeof(value_init)) {
         memset(&buff[0], value_init, value_size);
     }
@@ -291,7 +297,7 @@ ret_code_t ble_tof_init(ble_tof_t *p_tof, const ble_tof_init_t *p_tof_init) {
     our_char_add(p_tof, BLE_UUID_TOF_STATUS, true, false, BLE_GATT_HVX_INDICATION, sizeof(uint8_t), 0xFF, &p_tof->tof_status_char_handles);
     our_char_add(p_tof, BLE_UUID_TOF_RANGING_ENABLE, true, true, BLE_GATT_HVX_INDICATION, sizeof(uint8_t), 0xFF, &p_tof->tof_ranging_enable_char_handles);
     our_char_add(p_tof, BLE_UUID_TOF_RESET, true, true, BLE_GATT_HVX_INDICATION, sizeof(uint8_t), 0xFF, &p_tof->tof_reset_char_handles);
-    our_char_add(p_tof, BLE_UUID_TOF_CONFIG, true, true, BLE_GATT_HVX_INDICATION, 7, 0xFF, &p_tof->tof_config_char_handles);
+    our_char_add(p_tof, BLE_UUID_TOF_CONFIG, true, true, BLE_GATT_HVX_INDICATION, sizeof(config_cmd_data_t), 0xFF, &p_tof->tof_config_char_handles);
 
     return err_code;
 }
@@ -321,19 +327,12 @@ void tof_select_characteristic_update(ble_tof_t *p_tof, uint8_t sensor, uint8_t 
 }
 
 // Update tof config data, notify if characteristic is enabled
-void tof_config_characteristic_update(ble_tof_t *p_tof, uint8_t cmd, uint8_t id, int32_t value, uint8_t status) {
-    static uint16_t buff_size = 7;
-    uint8_t data[buff_size];
-    data[0] = cmd;
-    data[1] = id;
-    memcpy(&data[2], &value, 4);
-    data[6] = status;
-
+void tof_config_characteristic_update(ble_tof_t *p_tof, config_cmd_data_t *config_cmd) {
     if(is_tof_config_enabled){
-        characteristic_update(p_tof, &p_tof->tof_config_char_handles, BLE_GATT_HVX_INDICATION, data, buff_size);
+        characteristic_update(p_tof, &p_tof->tof_config_char_handles, BLE_GATT_HVX_INDICATION, (uint8_t*) config_cmd, sizeof(config_cmd_data_t));
     }
     else{
-        characteristic_set(p_tof, &p_tof->tof_config_char_handles, data, buff_size, 0);
+        characteristic_set(p_tof, &p_tof->tof_config_char_handles, (uint8_t*) config_cmd, sizeof(config_cmd_data_t), 0);
     }
 }
 

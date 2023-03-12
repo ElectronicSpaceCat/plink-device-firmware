@@ -41,13 +41,11 @@
 
 #include "timer_delay.h"
 
-#define FILE_ID_MAX 0x0002
-#define RECORD_KEY 0x1011 /* A key for the first record. */
-
 static fds_record_t record;
 static fds_record_desc_t record_desc;
 
 static bool fds_registered = false;
+static bool fds_inited = false;
 
 static volatile uint8_t m_tof_dfs_active = false;
 
@@ -144,31 +142,35 @@ void tof_fds_init(void) {
         }
     }
 
-    m_tof_dfs_active = true;
-    status = fds_init();
-    if (!status){
-        wfe(&m_tof_dfs_active);
+    if(!fds_inited){
+        m_tof_dfs_active = true;
+        status = fds_init();
+        if (!status){
+            wfe(&m_tof_dfs_active);
+            fds_inited = true;
+        }
     }
 }
 
-ret_code_t tof_fds_write(uint8_t file_id, uint8_t* data, size_t data_len) {
+ret_code_t tof_fds_write(uint16_t file_id, uint16_t record_key,uint8_t* data, size_t data_len) {
     uint16_t lfile_id = file_id;
+    uint16_t lrecord_key = record_key;
 
     // Set up record.
     record.file_id = file_id;
-    record.key = RECORD_KEY;
+    record.key = lrecord_key;
     record.data.p_data = data;
     // The following calculation takes into account any eventual remainder of the division
     record.data.length_words = (data_len + 3) / 4;;
 
-    NRF_LOG_INFO("FDS: writing %d bytes to record file %d", data_len, lfile_id);
+    NRF_LOG_INFO("FDS: writing %d bytes to file 0x%X rec 0x%X", data_len, record.file_id, record.key);
 
     // It is required to zero the token before first use.
     fds_find_token_t ftok;
     memset(&ftok, 0x00, sizeof(fds_find_token_t));
 
     // Does record exists?
-    ret_code_t status = fds_record_find(lfile_id, RECORD_KEY, &record_desc, &ftok);
+    ret_code_t status = fds_record_find(lfile_id, lrecord_key, &record_desc, &ftok);
     if (!status){
         // Yes - Use update instead of write
         m_tof_dfs_active = true;
@@ -200,42 +202,44 @@ ret_code_t tof_fds_write(uint8_t file_id, uint8_t* data, size_t data_len) {
     return status;
 }
 
-ret_code_t tof_fds_read(uint8_t file_id, uint8_t* data, size_t data_len) {
+ret_code_t tof_fds_read(uint16_t file_id, uint16_t record_key, uint8_t* data, size_t data_len) {
     uint16_t lfile_id = file_id;
+    uint16_t lrecord_key = record_key;
 
     /* It is required to zero the token before first use. */
     fds_find_token_t ftok;
     memset(&ftok, 0x00, sizeof(fds_find_token_t));
 
     /* Find the record */
-    ret_code_t status = fds_record_find(lfile_id, RECORD_KEY, &record_desc, &ftok);
+    ret_code_t status = fds_record_find(lfile_id, lrecord_key, &record_desc, &ftok);
     if (NRF_SUCCESS == status){
         /* Open the record */
         fds_flash_record_t flash_record;
         status = fds_record_open(&record_desc, &flash_record);
         if (NRF_SUCCESS == status) {
-            NRF_LOG_INFO("FDS: opened record, status: %s", fds_evt_result_str(status));
+            NRF_LOG_INFO("FDS: opened file 0x%X rec 0x%X, status: %s", lfile_id, lrecord_key, fds_evt_result_str(status));
             memcpy(data, flash_record.p_data, data_len);
         }
         else{
-            NRF_LOG_INFO("FDS: could not open record, status: %s", fds_evt_result_str(status));
+            NRF_LOG_INFO("FDS: could not open file 0x%X rec 0x%X, status: %s", lfile_id, lrecord_key, fds_evt_result_str(status));
         }
 
         /* Close the record when done. */
         status = fds_record_close(&record_desc);
         if (NRF_SUCCESS != status) {
-            NRF_LOG_INFO("FDS: could not close record, status: %s", fds_evt_result_str(status));
+            NRF_LOG_INFO("FDS: could not close file 0x%X rec 0x%X, status: %s", lfile_id, lrecord_key, fds_evt_result_str(status));
         }
     }
     else{
-        NRF_LOG_INFO("FDS: could not find record, status: %s", fds_evt_result_str(status));
+        NRF_LOG_INFO("FDS: could not find file 0x%X rec 0x%X, status: %s", lfile_id, lrecord_key, fds_evt_result_str(status));
     }
 
     return status;
 }
 
-ret_code_t tof_fds_delete(uint8_t file_id) {
+ret_code_t tof_fds_delete(uint16_t file_id, uint16_t record_key) {
     uint16_t lfile_id = file_id;
+    uint16_t lrecord_key = record_key;
 
     /* It is required to zero the token before first use. */
     fds_find_token_t ftok;
@@ -243,14 +247,15 @@ ret_code_t tof_fds_delete(uint8_t file_id) {
 
     ret_code_t status = NRF_SUCCESS;
 
+    NRF_LOG_INFO("FDS: deleting file 0x%X rec 0x%X", lfile_id, lrecord_key);
+
     /* Find all records with file_id and delete them */
-    while(NRF_SUCCESS == fds_record_find(lfile_id, RECORD_KEY, &record_desc, &ftok)){
+    while(NRF_SUCCESS == fds_record_find(lfile_id, lrecord_key, &record_desc, &ftok)){
         /* Delete the record */
         m_tof_dfs_active = true;
         status = fds_record_delete(&record_desc);
         if (!status){
             wfe(&m_tof_dfs_active);
-
             status = tof_fds_gc();
             if(status){
                 break;
