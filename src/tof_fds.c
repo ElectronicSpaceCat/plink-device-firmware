@@ -157,13 +157,13 @@ ret_code_t tof_fds_write(uint16_t file_id, uint16_t record_key,uint8_t* data, si
     uint16_t lrecord_key = record_key;
 
     // Set up record.
-    record.file_id = file_id;
+    record.file_id = lfile_id;
     record.key = lrecord_key;
     record.data.p_data = data;
     // The following calculation takes into account any eventual remainder of the division
     record.data.length_words = (data_len + 3) / 4;;
 
-    NRF_LOG_INFO("FDS: writing %d bytes to file 0x%X rec 0x%X", data_len, record.file_id, record.key);
+    NRF_LOG_INFO("FDS: writing %d bytes to file 0x%X rec 0x%X", data_len, lfile_id, lrecord_key);
 
     // It is required to zero the token before first use.
     fds_find_token_t ftok;

@@ -45,6 +45,8 @@
 
 static device_t device;
 
+static void config_cmd_ext_handler(void);
+
 const char* get_sensor_name_str(uint8_t snsr_type){
     switch(snsr_type){
         case SNSR_TYPE_VL53L4CD:
@@ -130,28 +132,39 @@ void config_resp_message(config_cmd_data_t* config_cmd){
             get_status_str(config_cmd->status));
 }
 
-void tof_config_cmd(uint8_t trgt, uint8_t cmd, uint8_t id, int32_t value){
+void tof_config_cmd_set(uint8_t trgt, uint8_t cmd, uint8_t id, int32_t value){
     device.config_cmd.trgt = trgt;
     device.config_cmd.cmd = cmd;
     device.config_cmd.id = id;
     device.config_cmd.value = value;
+    // Set the pending flag
+    device.config_pending = true;
+}
 
-    switch(device.config_cmd.trgt){
+void tof_process_config_cmd(void) {
+    // Return if no configuration pending
+    if (!device.config_pending)
+        return;
+
+    switch (device.config_cmd.trgt) {
         case CONFIG_TRGT_SNSR:
-            /* The sensor state machine handles the command separately */
-            return;
+            return; // Handled by sensor state machine
         case CONFIG_TRGT_EXT:
-            // Print the command message
-            config_cmd_message(&device.config_cmd);
-            // Process the configuration command
-            process_config_cmd_ext();
-            break;
+            tof_handle_config_cmd(&config_cmd_ext_handler);
+            return;
         default:
-            // Print the command message
-            config_cmd_message(&device.config_cmd);
-            // Not a valid target
-            device.config_cmd.status = CONFIG_CMD_NA;
-            break;
+            device.config_cmd.cmd = CONFIG_CMD_NA;
+            tof_handle_config_cmd(NULL);
+            return;
+    }
+}
+
+void tof_handle_config_cmd(config_cmd_handler_t cmd_handler){
+    // Print the command message
+    config_cmd_message(&device.config_cmd);
+
+    if(cmd_handler){
+        cmd_handler();
     }
 
     // Print the response message
@@ -160,9 +173,11 @@ void tof_config_cmd(uint8_t trgt, uint8_t cmd, uint8_t id, int32_t value){
     tof_data_callback(&device, TOF_DATA_CONFIG);
     // Reset the cmd target
     device.config_cmd.trgt = CONFIG_TRGT_NA;
+    // Reset the pending flag
+    device.config_pending = false;
 }
 
-void process_config_cmd_ext(void) {
+static void config_cmd_ext_handler(void) {
     uint8_t id = device.config_cmd.id;
     uint8_t cmd = device.config_cmd.cmd;
     int32_t value = device.config_cmd.value;

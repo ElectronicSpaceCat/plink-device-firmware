@@ -66,7 +66,7 @@ typedef struct {
 }sensor_data_t;
 
 // Helper functions
-static void process_config_cmd(void);
+static void config_cmd_handler(void);
 static uint8_t set_config(snsr_data_t* sensor, uint8_t id, int32_t value);
 static uint8_t load_config(snsr_data_t* sensor, uint8_t id);
 static void init_config_types(snsr_data_t *sensor);
@@ -326,10 +326,9 @@ static void state_init(void) {
 
     if (TOF_RESET_SENSOR == device->reset_cmd ||
         TOF_RESET_SENSOR_FACTORY == device->reset_cmd) {
+        device->reset_cmd = TOF_RESET_NA;
         tof_data_callback(device, TOF_DATA_RESET);
     }
-
-    device->reset_cmd = TOF_RESET_NA;
 
     // Go to state_idle
     device->sensor->state = state_idle;
@@ -341,7 +340,7 @@ static void state_idle(void) {
         device->sensor->state = state_standby;
     }
     // Process configuration commands
-    else if (CONFIG_TRGT_SNSR == device->config_cmd.trgt) {
+    else if (device->config_pending && CONFIG_TRGT_SNSR == device->config_cmd.trgt) {
         device->sensor->state = state_config;
     }
     // Reset the sensor if the reset command was sent
@@ -391,7 +390,7 @@ void state_clear_int_and_start(void) {
         device->sensor->state = state_stop;
     }
     // Process configuration commands
-    else if (CONFIG_TRGT_SNSR == device->config_cmd.trgt) {
+    else if (device->config_pending && CONFIG_TRGT_SNSR == device->config_cmd.trgt) {
         device->sensor->state = state_config;
     }
     // Reset the sensor if the command was sent
@@ -479,21 +478,13 @@ static void state_err_timeout(void) {
 }
 
 static void state_config(void) {
-    // Print the command message
-    config_cmd_message(&device->config_cmd);
     // Process the configuration command
-    process_config_cmd();
-    // Print the response message
-    config_resp_message(&device->config_cmd);
-    // Notify the user
-    tof_data_callback(device, TOF_DATA_CONFIG);
-    // Reset the cmd id
-    device->config_cmd.trgt = CONFIG_TRGT_NA;
+    tof_handle_config_cmd(&config_cmd_handler);
     // Reset state to idle
     device->sensor->state = state_idle;
 }
 
-static void process_config_cmd(void) {
+static void config_cmd_handler(void) {
     uint8_t id = device->config_cmd.id;
     uint8_t cmd = device->config_cmd.cmd;
     int32_t value = device->config_cmd.value;

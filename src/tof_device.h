@@ -197,11 +197,14 @@ struct device_s{
     uint16_t distance_mm_ref; // ranging distance reference (for debugging)
     uint16_t sample_count; // sample count, used in debug
     config_cmd_data_t config_cmd; // configuration command data
+    uint8_t config_pending;
     reset_cmd_t reset_cmd; // reset command
     snsr_data_t sensors[NUM_TOF_SNSR]; // sensors
     snsr_data_t* sensor; // active sensor
     int32_t ext_data[MAX_STORAGE_DATA_BUFF_SIZE];
 };
+
+typedef void (*config_cmd_handler_t)(void);
 
 /**
  * Callback used to pass sensor data
@@ -237,7 +240,19 @@ device_t* tof_device_get(void);
  * @param id         - Id of the configuration
  * @param value      - Value to send
  */
-void tof_config_cmd(uint8_t trgt, uint8_t cmd, uint8_t id, int32_t value);
+void tof_config_cmd_set(uint8_t trgt, uint8_t cmd, uint8_t id, int32_t value);
+
+/**
+ * Debug: Process configuration command
+ * @brief Should be called in main loop
+ */
+void tof_process_config_cmd(void);
+
+/**
+ * Debug: Handle configuration command
+ * @param cmd_handler
+ */
+void tof_handle_config_cmd(config_cmd_handler_t cmd_handler);
 
 /**
  * Debug: Get a configuration value
@@ -286,12 +301,6 @@ const char* get_sensor_name_str(uint8_t snsr_type);
  * @return string
  */
 const char* get_cmd_str(uint8_t cmd);
-
-/**
- * Process configuration command for external data storage
- * @param device
- */
-void process_config_cmd_ext(void);
 
 /**
  * Get the command status

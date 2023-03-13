@@ -253,7 +253,7 @@ void rtt_debug_cmd_check(void) {
                 uint8_t id = (uint8_t) atol(token);
 
                 if(cmd != CONFIG_CMD_SET){
-                    tof_config_cmd(trgt, cmd, id, 0);
+                    tof_config_cmd_set(trgt, cmd, id, 0);
                     return;
                 }
 
@@ -263,7 +263,7 @@ void rtt_debug_cmd_check(void) {
                 }
 
                 int32_t value = (int32_t) atol(token);
-                tof_config_cmd(trgt, cmd, id, value);
+                tof_config_cmd_set(trgt, cmd, id, value);
             }
             return;
         }

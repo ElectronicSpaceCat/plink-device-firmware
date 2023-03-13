@@ -235,7 +235,7 @@ static void tof_select_write_handler(uint16_t conn_handle, uint8_t tof_select) {
 
 // ble tof characteristic for setting the sensor configurations
 static void tof_config_write_handler(uint16_t conn_handle, uint8_t trgt, uint8_t cmd, uint8_t id, int32_t value) {
-    tof_config_cmd(trgt, cmd, id, value);
+    tof_config_cmd_set(trgt, cmd, id, value);
 }
 
 // ble tof characteristic to start/stop the sensor ranging
@@ -1286,6 +1286,9 @@ static void idle_state_handle(void) {
 	    tof_sm_run_flag = false;
 		tof_sm_run();
 	}
+
+    // Process configuration command
+	tof_process_config_cmd();
 
 	// Process the tof_service hvx indications queue if not empty
 	tof_hvx_gatts_queue_process();
