@@ -15,6 +15,7 @@ SET VERSION=1.0.0
 
 ::ECHO "%VERSION%"
 
-ECHO %VERSION% > version
+:: Create version file without trailing white spaces or carriage return
+ECHO|SET /P ="%VERSION%" > version
 
 ::PAUSE
