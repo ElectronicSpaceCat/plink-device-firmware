@@ -459,9 +459,9 @@ VL53LX_Error VL53LX_GetTuningParameter(VL53LX_DEV Dev,
 VL53LX_Error VL53LX_PerformRefSpadManagement(VL53LX_DEV Dev);
 
 /**
- * @brief Enable/Disable dynamic Xtalk compensation feature
+ * @brief Set dynamic Xtalk compensation mode feature
  *
- * Enable/Disable dynamic Xtalk compensation (aka smudge correction).
+ * Set dynamic Xtalk compensation mode (aka smudge correction).
  *
  * @param   Dev    Device Handle
  * @param   Mode   Set the smudge correction mode
@@ -469,9 +469,22 @@ VL53LX_Error VL53LX_PerformRefSpadManagement(VL53LX_DEV Dev);
  * @return  VL53LX_ERROR_NONE        Success
  * @return  "Other error code"       See ::VL53LX_Error
  */
-VL53LX_Error VL53LX_SmudgeCorrectionEnable(VL53LX_DEV Dev,
+VL53LX_Error VL53LX_SetSmudgeCorrectionMode(VL53LX_DEV Dev,
 		VL53LX_SmudgeCorrectionModes Mode);
 
+/**
+ * @brief Get dynamic Xtalk compensation mode feature
+ *
+ * Get dynamic Xtalk compensation mode (aka smudge correction).
+ *
+ * @param   Dev    Device Handle
+ * @param   Mode   Pointed to the smudge correction mode
+ * See ::VL53LX_SmudgeCorrectionModes
+ * @return  VL53LX_ERROR_NONE        Success
+ * @return  "Other error code"       See ::VL53LX_Error
+ */
+VL53LX_Error VL53LX_GetSmudgeCorrectionMode(VL53LX_DEV Dev,
+        VL53LX_SmudgeCorrectionModes* Mode);
 
 /**
  * @brief Enable/Disable Cross talk compensation feature

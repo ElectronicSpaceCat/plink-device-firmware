@@ -44,6 +44,9 @@ SET BL=..\plink-device-bootloader\build\nrf_plink_bootloader.hex
 :: Output file name
 SET OUTPUT_NAME=prod_plink_app
 
+ECHO.
+ECHO Creating produciton application hex file
+
 %NRF_UTIL% settings generate --family NRF52 --application %FW% --application-version-string "1.0.0" --bootloader-version 0 --bl-settings-version 2 bl_setting.hex
 
 mergehex --merge bl_setting.hex %BL% %NRF_SD% --output temp_merge.hex
@@ -52,5 +55,17 @@ mergehex --merge temp_merge.hex %FW% --output %OUTPUT_NAME%.hex
 
 DEL bl_setting.hex
 DEL temp_merge.hex
+
+ECHO.
+ECHO Hex created at %OUTPUT_NAME%.hex
+ECHO.
+ECHO Creating dfu package zip file
+ECHO.
+
+:: Create the dfu package
+CD .\extra\dfu
+CALL plink_dfu_pkg.bat
+
+ECHO.
 
 ::PAUSE

@@ -125,8 +125,8 @@
 
 /** @defgroup General setup parameters @{ */
 
-#define APP_ADV_TX_PWR                  -16                                     /**< TX power level when advertising. Note: Power level at -40 does not work for the BC832*/
-#define APP_CONN_TX_PWR                 -20                                     /**< TX power level when connected. */
+#define APP_ADV_TX_PWR                   0                                      /**< TX power level when advertising. Note: Power level at -40 does not work for the BC832*/
+#define APP_CONN_TX_PWR                 -4                                      /**< TX power level when connected. */
 
 #define APP_ADV_FAST_INTERVAL           300                                     /**< Advertising interval in units of 0.625 ms. (This value corresponds to 187.5 ms)*/
 #define APP_ADV_FAST_DURATION           18000                                   /**< Advertising duration in units of 10 milliseconds. (This value corresponds to 3 min or 180 seconds)*/

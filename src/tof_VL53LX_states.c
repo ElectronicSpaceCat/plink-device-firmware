@@ -85,6 +85,8 @@ APP_TIMER_DEF(err_timeout_timer_id);
 #define FILE_ID_MASK   0x1100
 #define FILD_ID(snsr_id) (FILE_ID_MASK | snsr_id)
 
+#define SNSR_CFGS_SIZE(device) (device->sensor->num_configs * sizeof(int32_t))
+
 /**
  * Configuration Notes:
  *
@@ -99,7 +101,7 @@ typedef enum {
     CONFIG_TIME_BUDGET,      /**< CONFIG_TIME_BUDGET */
     CONFIG_OFFSET_MODE,      /**< CONFIG_OFFSET_MODE */
     CONFIG_DISTANCE_MODE,    /**< CONFIG_DISTANCE_MODE */
-    CONFIG_SMUDGE_CORR_EN,   /**< CONFIG_SMUDGE_CORR_EN */
+    CONFIG_SMUDGE_CORR_MODE,   /**< CONFIG_SMUDGE_CORR_EN */
     CONFIG_XTALK_COMP_EN,    /**< CONFIG_XTALK_COMP_EN */
     CONFIG_RECT_OF_INTEREST,
     // Calibrations
@@ -286,16 +288,36 @@ static void state_prepare(void) {
     }
 
     // Read user data from storage if it exists
-    status = tof_fds_read(FILD_ID(device->sensor->id), RKEY_DATA_USER, (uint8_t*)&cfg_buff, sizeof(cfg_buff));
+    status = tof_fds_read(
+            FILD_ID(device->sensor->id),
+            RKEY_DATA_USER,
+            (uint8_t*)&cfg_buff,
+            SNSR_CFGS_SIZE(device));
 
     // User data read?
     if(!status){
+        // Yes - Set Distance mode first (according to data sheet)
+        if(CONFIG_STAT_ERROR != set_config(device->sensor, CONFIG_DISTANCE_MODE, cfg_buff[CONFIG_DISTANCE_MODE])){
+            load_config(device->sensor, CONFIG_DISTANCE_MODE);
+            NRF_LOG_INFO("%s set %s", device->sensor->name, get_config_str(CONFIG_DISTANCE_MODE));
+        }
+        else{
+            NRF_LOG_INFO("%s set %s: error", device->sensor->name, get_config_str(CONFIG_DISTANCE_MODE));
+            device->sensor->state = state_err;
+        }
+
         // Yes - Set all applicable configurations
         for(int i = 0; i < device->sensor->num_configs; ++i){
+            // Skip Distance mode since it's handled outside the loop
+            if(CONFIG_DISTANCE_MODE == i){
+                continue;
+            }
+
             // Skip non parameter configuration types
             if(CONFIG_TYPE_PARAM != device->sensor->config[i].type){
                 continue;
             }
+
             // Set the configuration. If no error then cache the value
             if(CONFIG_STAT_ERROR != set_config(device->sensor, i, cfg_buff[i])){
                 load_config(device->sensor, i);
@@ -535,7 +557,11 @@ static void config_cmd_handler(void) {
                 cfg_buff[i] = device->sensor->config[i].value;
             }
             // Store user configurations
-            tof_fds_write(FILD_ID(device->sensor->id), RKEY_DATA_USER, (uint8_t*)&cfg_buff, device->sensor->num_configs);
+            tof_fds_write(
+                    FILD_ID(device->sensor->id),
+                    RKEY_DATA_USER,
+                    (uint8_t*)&cfg_buff,
+                    SNSR_CFGS_SIZE(device));
             return;
         default:
             device->config_cmd.status = CONFIG_STAT_INVALID;
@@ -587,8 +613,8 @@ static uint8_t set_config(snsr_data_t *sensor, uint8_t id, int32_t value) {
         case CONFIG_DISTANCE_MODE:
             status = VL53LX_SetDistanceMode(VL53LX(sensor), (uint8_t) value);
             break;
-        case CONFIG_SMUDGE_CORR_EN:
-            status = VL53LX_SmudgeCorrectionEnable(VL53LX(sensor), (uint8_t) value);
+        case CONFIG_SMUDGE_CORR_MODE:
+            status = VL53LX_SetSmudgeCorrectionMode(VL53LX(sensor), (uint8_t) value);
             if(!status){
                 sensor->config[id].value = value;
             }
@@ -660,7 +686,6 @@ static uint8_t load_config(snsr_data_t *sensor, uint8_t id) {
         case CONFIG_TIME_BUDGET: {
             uint32_t time_budget;
             status = VL53LX_GetMeasurementTimingBudgetMicroSeconds(VL53LX(sensor), &time_budget);
-            // Get the timing data
             if (!status) {
                 sensor->config[id].value = (int32_t)time_budget;
             }
@@ -672,8 +697,14 @@ static uint8_t load_config(snsr_data_t *sensor, uint8_t id) {
         case CONFIG_DISTANCE_MODE:
             sensor->config[id].value = (int32_t)VL53LX(sensor)->Data.CurrentParameters.DistanceMode;
             break;
-        case CONFIG_SMUDGE_CORR_EN:
+        case CONFIG_SMUDGE_CORR_MODE:{
+            VL53LX_SmudgeCorrectionModes mode;
+            status = VL53LX_GetSmudgeCorrectionMode(VL53LX(sensor), &mode);
+            if (!status) {
+                sensor->config[id].value = (int32_t)mode;
+            }
             break;
+        }
         case CONFIG_XTALK_COMP_EN:{
             uint8_t xtalk_comp_en;
             status = VL53LX_GetXTalkCompensationEnable(VL53LX(sensor), &xtalk_comp_en);
@@ -714,7 +745,7 @@ static void init_config_types(snsr_data_t *sensor){
             case CONFIG_TIME_BUDGET:
             case CONFIG_OFFSET_MODE:
             case CONFIG_DISTANCE_MODE:
-            case CONFIG_SMUDGE_CORR_EN:
+            case CONFIG_SMUDGE_CORR_MODE:
             case CONFIG_XTALK_COMP_EN:
             case CONFIG_RECT_OF_INTEREST:
                 sensor->config[i].type = CONFIG_TYPE_PARAM;
@@ -746,7 +777,7 @@ static const char* get_config_str(uint8_t config) {
             return "offset mode";
         case CONFIG_DISTANCE_MODE:
             return "dist mode";
-        case CONFIG_SMUDGE_CORR_EN:
+        case CONFIG_SMUDGE_CORR_MODE:
             return "smudge corr en";
         case CONFIG_XTALK_COMP_EN:
             return "xtalk comp en";

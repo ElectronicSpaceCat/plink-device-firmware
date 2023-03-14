@@ -233,7 +233,7 @@ VL53LX_Error VL53LX_DataInit(VL53LX_DEV Dev)
 
 
 	if (Status == VL53LX_ERROR_NONE)
-		Status = VL53LX_SmudgeCorrectionEnable(Dev,
+		Status = VL53LX_SetSmudgeCorrectionMode(Dev,
 			VL53LX_SMUDGE_CORRECTION_NONE);
 
 	measurement_mode  = VL53LX_DEVICEMEASUREMENTMODE_BACKTOBACK;
@@ -1187,7 +1187,7 @@ VL53LX_Error VL53LX_PerformRefSpadManagement(VL53LX_DEV Dev)
 }
 
 
-VL53LX_Error VL53LX_SmudgeCorrectionEnable(VL53LX_DEV Dev,
+VL53LX_Error VL53LX_SetSmudgeCorrectionMode(VL53LX_DEV Dev,
 		VL53LX_SmudgeCorrectionModes Mode)
 {
 	VL53LX_Error Status = VL53LX_ERROR_NONE;
@@ -1219,7 +1219,7 @@ VL53LX_Error VL53LX_SmudgeCorrectionEnable(VL53LX_DEV Dev,
 		s3 = VL53LX_dynamic_xtalk_correction_single_apply_disable(Dev);
 		break;
 	default:
-		Status = VL53LX_ERROR_INVALID_PARAMS;
+		Status = VL53LX_ERROR_MODE_NOT_SUPPORTED;
 		break;
 	}
 
@@ -1233,6 +1233,51 @@ VL53LX_Error VL53LX_SmudgeCorrectionEnable(VL53LX_DEV Dev,
 
 	LOG_FUNCTION_END(Status);
 	return Status;
+}
+
+VL53LX_Error VL53LX_GetSmudgeCorrectionMode(VL53LX_DEV Dev,
+        VL53LX_SmudgeCorrectionModes* Mode)
+{
+    VL53LX_Error Status = VL53LX_ERROR_NONE;
+    VL53LX_SmudgeCorrectionModes lmode = 0xFF;
+
+    const VL53LX_LLDriverData_t *pdev = VL53LXDevStructGetLLDriverHandle(Dev);
+
+    LOG_FUNCTION_START("");
+
+    if(0 == pdev->smudge_correct_config.smudge_corr_enabled &&
+       0 == pdev->smudge_correct_config.smudge_corr_apply_enabled &&
+       0 == pdev->smudge_correct_config.smudge_corr_single_apply){
+
+        lmode = VL53LX_SMUDGE_CORRECTION_NONE;
+    }
+
+    if(1 == pdev->smudge_correct_config.smudge_corr_enabled &&
+       1 == pdev->smudge_correct_config.smudge_corr_apply_enabled &&
+       0 == pdev->smudge_correct_config.smudge_corr_single_apply){
+
+        lmode = VL53LX_SMUDGE_CORRECTION_CONTINUOUS;
+    }
+
+    if(1 == pdev->smudge_correct_config.smudge_corr_enabled &&
+       1 == pdev->smudge_correct_config.smudge_corr_apply_enabled &&
+       1 == pdev->smudge_correct_config.smudge_corr_single_apply){
+
+        lmode = VL53LX_SMUDGE_CORRECTION_SINGLE;
+    }
+
+    if(1 == pdev->smudge_correct_config.smudge_corr_enabled &&
+       0 == pdev->smudge_correct_config.smudge_corr_apply_enabled &&
+       0 == pdev->smudge_correct_config.smudge_corr_single_apply){
+
+        lmode = VL53LX_SMUDGE_CORRECTION_DEBUG;
+    }
+
+    // Set mode
+    *Mode = lmode;
+
+    LOG_FUNCTION_END(Status);
+    return Status;
 }
 
 
